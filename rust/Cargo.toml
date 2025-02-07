@@ -1,0 +1,13 @@
+[package]
+name = "life"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+godot = "0.2.3"
+rand = "0.9.0"

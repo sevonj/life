@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://yllvhxlsp7p8"]
+
+[ext_resource type="Texture2D" uid="uid://bf2773xgldsgo" path="res://assets/textures/tex_fx_particle_zzz.png" id="1_iaa2i"]
+
+[resource]
+transparency = 1
+shading_mode = 0
+albedo_texture = ExtResource("1_iaa2i")
+billboard_mode = 1

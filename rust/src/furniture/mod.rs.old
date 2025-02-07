@@ -1,0 +1,14 @@
+mod appliance_stove;
+
+pub use appliance_stove::ApplianceStove;
+
+use crate::ActionAdvertisement;
+
+/// A functional piece of furniture must implement this trait. 
+pub trait Furniture {
+    /// List of actions that a person can perform on
+    fn available_actions(&self) -> Vec<ActionAdvertisement>;
+
+    // /// Actions that can be chosen by person AI
+    // fn available_actions(&self) -> Vec<...>;
+}

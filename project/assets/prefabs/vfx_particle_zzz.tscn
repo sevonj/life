@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://dnovyghwe0ute"]
+
+[ext_resource type="Material" uid="uid://yllvhxlsp7p8" path="res://assets/materials/fx/mat_fx_particle_zzz.tres" id="1_dfjyj"]
+[ext_resource type="Material" uid="uid://ciu7u6clt3qa6" path="res://assets/materials/fx/mat_fx_particle_zzz_process.tres" id="1_vgxs3"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_g7ub8"]
+material = ExtResource("1_dfjyj")
+size = Vector2(0.2, 0.2)
+
+[node name="GPUParticles3D" type="GPUParticles3D"]
+amount = 3
+lifetime = 2.48
+process_material = ExtResource("1_vgxs3")
+draw_pass_1 = SubResource("QuadMesh_g7ub8")

@@ -1,0 +1,16 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = 4.3
+reloadable = true
+
+[libraries]
+linux.debug.x86_64 = "res://../rust/target/debug/liblife.so"
+linux.release.x86_64 = "res://../rust/target/release/liblife.so"
+windows.debug.x86_64 = "res://../rust/target/debug/hot_reload.dll"
+windows.release.x86_64 = "res://../rust/target/release/hot_reload.dll"
+macos.debug = "res://../rust/target/debug/liblife.dylib"
+macos.release = "res://../rust/target/release/liblife.dylib"
+macos.debug.arm64 = "res://../rust/target/debug/liblife.dylib"
+macos.release.arm64 = "res://../rust/target/release/liblife.dylib"
+web.debug.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/debug/hot_reload.wasm"
+web.release.wasm32 = "res://../rust/target/wasm32-unknown-emscripten/release/hot_reload.wasm"

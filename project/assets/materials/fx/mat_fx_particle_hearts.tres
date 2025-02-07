@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://boyjx3cgkip7c"]
+
+[ext_resource type="Texture2D" uid="uid://by158sd6xvknl" path="res://assets/textures/tex_fx_particle_hearts.png" id="1_2vkcr"]
+
+[resource]
+transparency = 1
+shading_mode = 0
+albedo_texture = ExtResource("1_2vkcr")
+billboard_mode = 1

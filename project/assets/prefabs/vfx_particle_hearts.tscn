@@ -1,0 +1,13 @@
+[gd_scene load_steps=4 format=3 uid="uid://des0snguoimma"]
+
+[ext_resource type="Material" uid="uid://c0abfueguplx1" path="res://assets/materials/fx/mat_fx_particle_hearts_process.tres" id="1_b47k3"]
+[ext_resource type="Material" uid="uid://boyjx3cgkip7c" path="res://assets/materials/fx/mat_fx_particle_hearts.tres" id="2_ow10x"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_gi0vb"]
+material = ExtResource("2_ow10x")
+size = Vector2(0.2, 0.2)
+
+[node name="GPUParticles3D" type="GPUParticles3D"]
+amount = 4
+process_material = ExtResource("1_b47k3")
+draw_pass_1 = SubResource("QuadMesh_gi0vb")

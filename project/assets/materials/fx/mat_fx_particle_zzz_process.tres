@@ -1,0 +1,10 @@
+[gd_resource type="ParticleProcessMaterial" format=3 uid="uid://ciu7u6clt3qa6"]
+
+[resource]
+angle_min = -248.9
+angle_max = 177.8
+direction = Vector3(0, 1, 0)
+spread = 15.309
+initial_velocity_min = 1.0
+initial_velocity_max = 2.0
+gravity = Vector3(0, 0, 0)

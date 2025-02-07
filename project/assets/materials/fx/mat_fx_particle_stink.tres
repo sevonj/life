@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://ecqkrw7mc10b"]
+
+[ext_resource type="Texture2D" uid="uid://c135b85oksn4t" path="res://assets/textures/tex_fx_particle_stink.png" id="1_0vqjk"]
+
+[resource]
+transparency = 1
+shading_mode = 0
+albedo_texture = ExtResource("1_0vqjk")
+billboard_mode = 1
