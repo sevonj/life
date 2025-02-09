@@ -72,6 +72,7 @@ impl UiPersonNeedsPanel {
             let mut vbox = VBoxContainer::new_alloc();
             vbox.add_child(&label);
             vbox.add_child(&*bar);
+            vbox.set_name(format!("vbox_{title}").as_str());
             vbox
         }
 
@@ -90,6 +91,8 @@ impl UiPersonNeedsPanel {
         // Row 4
         grid.add_child(&build_stat(&mut self.bar_bladder, "Bladder"));
         grid.add_child(&build_stat(&mut self.bar_environment, "Environment"));
+
+        grid.set_name("grid");
 
         self.base_mut().add_child(&grid);
     }

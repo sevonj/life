@@ -2,7 +2,10 @@
 //! desc: An orbiting camera controller
 //!
 use godot::{
-    classes::{input::MouseMode, InputEvent, InputEventMouseButton, InputEventMouseMotion},
+    classes::{
+        input::MouseMode, node::ProcessMode, InputEvent, InputEventMouseButton,
+        InputEventMouseMotion,
+    },
     global::{deg_to_rad, MouseButton},
     prelude::*,
 };
@@ -35,6 +38,8 @@ impl INode3D for CameraRigOrbit {
     }
 
     fn ready(&mut self) {
+        self.base_mut().set_process_mode(ProcessMode::ALWAYS);
+
         self.setup_camera();
 
         // A decent start at the center of the 32x32 lot
@@ -103,8 +108,11 @@ impl INode3D for CameraRigOrbit {
 
 impl CameraRigOrbit {
     fn setup_camera(&mut self) {
+        self.camera.set_name("camera3d");
+
         let mut pivot = self.pivot.clone();
         pivot.add_child(&self.camera);
+        pivot.set_name("pivot");
 
         self.base_mut().add_child(&pivot);
     }

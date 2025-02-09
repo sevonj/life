@@ -1,19 +1,19 @@
 //! Class: [World]
 //! Desc: World root node
 //!
+use godot::prelude::*;
 use godot::{
     classes::{
         control::{LayoutPreset, MouseFilter, SizeFlags},
-        BoxShape3D, Control, InputEvent, InputEventMouseButton, Shape3D, VBoxContainer,
+        node::ProcessMode,
+        BoxShape3D, Control, Engine, InputEvent, InputEventMouseButton, Shape3D, VBoxContainer,
     },
     global::MouseButton,
-    prelude::*,
 };
 
 use crate::{
-    furniture::{self, Furniture},
-    ui_home_taskbar::UiHomeTaskbar,
-    ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Person, WorldEnv,
+    ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, Person,
+    UiWorldTaskbar, WorldEnv, WorldViewMode,
 };
 
 #[derive(Debug, GodotClass)]
@@ -22,9 +22,10 @@ pub struct World {
     people: Vec<Gd<Person>>,
     furniture: Vec<Gd<Furniture>>,
     selected_person: Option<Gd<Person>>,
+    view_mode: WorldViewMode,
 
     ui_root: Gd<VBoxContainer>,
-    ui_taskbar: Gd<UiHomeTaskbar>,
+    ui_taskbar: Gd<UiWorldTaskbar>,
 
     scn_root: Gd<Node3D>,
     scn_env: Gd<WorldEnv>,
@@ -36,7 +37,7 @@ pub struct World {
 #[godot_api]
 impl INode for World {
     fn init(base: Base<Self::Base>) -> Self {
-        let ui_taskbar = UiHomeTaskbar::new_alloc();
+        let ui_taskbar = UiWorldTaskbar::new_alloc();
         let ui_root = VBoxContainer::new_alloc();
 
         let scn_root = Node3D::new_alloc();
@@ -47,6 +48,7 @@ impl INode for World {
             people: vec![],
             furniture: vec![],
             selected_person: None,
+            view_mode: WorldViewMode::default(),
 
             ui_root,
             ui_taskbar,
@@ -60,10 +62,14 @@ impl INode for World {
     }
 
     fn ready(&mut self) {
+        self.base_mut().set_process_mode(ProcessMode::ALWAYS);
+
         self.setup_ui();
         self.setup_scene();
         self.setup_objects();
         self.setup_people();
+
+        self.base_mut().print_tree_pretty();
     }
 
     fn process(&mut self, _delta: f64) {
@@ -83,8 +89,24 @@ impl INode for World {
         }
     }
 }
+
 #[godot_api]
 impl World {
+    #[func]
+    fn get_view_mode(&self) -> WorldViewMode {
+        self.view_mode
+    }
+
+    #[func]
+    pub fn set_view_mode(&mut self, mode: WorldViewMode) {
+        if mode == WorldViewMode::Play {
+            self.base_mut().get_tree().unwrap().set_pause(false);
+        } else {
+            self.base_mut().get_tree().unwrap().set_pause(true);
+        }
+        self.view_mode = mode;
+    }
+
     #[func]
     fn on_person_selected(&mut self, person: Gd<Person>) {
         self.select_person(Some(person));
@@ -100,6 +122,10 @@ impl World {
         vec
     }
 
+    pub fn view_mode(&self) -> WorldViewMode {
+        self.view_mode
+    }
+
     fn setup_ui(&mut self) {
         // Empty space above taskbar
         let mut spacer = Control::new_alloc();
@@ -109,13 +135,16 @@ impl World {
 
         self.ui_taskbar
             .set_anchors_preset(LayoutPreset::BOTTOM_LEFT);
+        let this_gd = self.to_gd();
+        self.ui_taskbar.bind_mut().connect_world(this_gd);
         self.ui_taskbar.set_name("ui_taskbar");
 
         let mut ui_root = self.ui_root.clone();
         ui_root.set_anchors_preset(LayoutPreset::FULL_RECT);
         ui_root.add_child(&spacer);
         ui_root.add_child(&self.ui_taskbar);
-        self.ui_taskbar.set_name("ui_root");
+        ui_root.set_process_mode(ProcessMode::ALWAYS);
+        ui_root.set_name("ui_root");
 
         self.base_mut().add_child(&ui_root);
 
@@ -136,6 +165,7 @@ impl World {
         scn_root.add_child(&self.scn_env);
         scn_root.add_child(&terrain);
         scn_root.add_child(&self.scn_camera_rig);
+        scn_root.set_process_mode(ProcessMode::PAUSABLE);
         scn_root.set_name("scn_root");
 
         self.base_mut().add_child(&scn_root);
@@ -319,14 +349,14 @@ impl World {
         person.connect("sig_selected", &self.to_gd().callable("on_person_selected"));
         person.bind_mut().world = Some(self.to_gd());
 
-        self.base_mut().add_child(&person);
+        self.scn_root.add_child(&person);
         self.people.push(person);
     }
 
     pub fn add_furniture(&mut self, furniture: Gd<Furniture>) {
         //furniture.connect("sig_selected", &self.to_gd().callable("on_person_selected"));
 
-        self.base_mut().add_child(&furniture);
+        self.scn_root.add_child(&furniture);
         self.furniture.push(furniture);
     }
 

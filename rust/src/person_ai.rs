@@ -3,12 +3,14 @@
 //!
 use std::collections::HashSet;
 
-use godot::global::godot_print;
 use rand;
 
-use crate::{
-    action, furniture::Furniture, Action, ActionAdvertisement, EntityCollider, PersonNeeds,
-};
+use crate::{Action, ActionAdvertisement, PersonNeeds};
+
+struct ActionTemp {
+    action: Action,
+    score: f64,
+}
 
 #[derive(Debug)]
 pub struct PersonAi {
@@ -30,29 +32,24 @@ impl PersonAi {
         advertised_actions: &Vec<ActionAdvertisement>,
         possible_actions: &Vec<String>,
     ) -> Action {
-        struct ActionTemp {
-            action: Action,
-            score: f64,
-        }
-
         let mut processed_actions = vec![];
-        for action in advertised_actions {
-            if !possible_actions.contains(&action.action_key) {
+
+        for advert in advertised_actions {
+            if !possible_actions.contains(&advert.action_key)
+                || advert.source_node.bind().is_reserved()
+            {
                 continue;
             }
-            if action.source_node.bind().is_reserved() {
-                continue;
-            }
-            if action.action_key == self.last_action {
-                continue;
-            }
-            processed_actions.push(ActionTemp {
-                action: Action {
-                    key: action.action_key.clone(),
-                    target: Some(action.source_node.clone()),
-                },
-                score: self.score_action(needs, action),
-            });
+
+            let action = Action {
+                key: advert.action_key.clone(),
+                target: Some(advert.source_node.clone()),
+            };
+
+            let mut score = self.score_action_by_needs(needs, advert);
+            score += self.score_action_by_history(advert);
+
+            processed_actions.push(ActionTemp { action, score });
         }
         if processed_actions.is_empty() {
             return Action::idle();
@@ -60,16 +57,7 @@ impl PersonAi {
 
         processed_actions.sort_by(|a, b| a.score.partial_cmp(&b.score).unwrap());
 
-        // Only keep the highest ranking action of each type
-        let mut dupe_check = HashSet::new();
-        for i in (0..processed_actions.len()).rev() {
-            let action = &processed_actions[i];
-            let key = action.action.key.clone();
-            if dupe_check.contains(&key) {
-                processed_actions.remove(i);
-            }
-            dupe_check.insert(key);
-        }
+        filter_action_dupes(&mut processed_actions);
 
         let choice = processed_actions.len()
             - 1
@@ -78,14 +66,14 @@ impl PersonAi {
                 2 => rand::random_range(0..=1),
                 _ => rand::random_range(0..=2),
             };
-        
+
         processed_actions[choice].action.clone()
     }
 
-    fn score_action(&self, needs: &PersonNeeds, action: &ActionAdvertisement) -> f64 {
+    fn score_action_by_needs(&self, needs: &PersonNeeds, advert: &ActionAdvertisement) -> f64 {
         let mut score = 0.0;
 
-        for stat in &action.stats {
+        for stat in &advert.stats {
             let value = stat.value as f64;
             match stat.key.as_str() {
                 "bladder" => score += value / needs.bladder(),
@@ -101,5 +89,25 @@ impl PersonAi {
         }
 
         score
+    }
+
+    fn score_action_by_history(&self, advert: &ActionAdvertisement) -> f64 {
+        if advert.action_key == self.last_action {
+            return -100.0;
+        }
+        0.0
+    }
+}
+
+/// Only keep the highest ranking action of each type
+fn filter_action_dupes(actions: &mut Vec<ActionTemp>) {
+    let mut dupe_check = HashSet::new();
+    for i in (0..actions.len()).rev() {
+        let action = &actions[i];
+        let key = action.action.key.clone();
+        if dupe_check.contains(&key) {
+            actions.remove(i);
+        }
+        dupe_check.insert(key);
     }
 }

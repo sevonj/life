@@ -69,6 +69,7 @@ impl EntityCollider {
 
         let mut coll_shape = self.shape_node.clone();
         coll_shape.set_shape(&shape);
+        coll_shape.set_name("coll_shape");
 
         self.base_mut().add_child(&coll_shape);
     }
