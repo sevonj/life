@@ -20,6 +20,7 @@ pub struct CameraRigOrbit {
     camera: Gd<Camera3D>,
 
     distance: f32,
+    stashed_mouse_pos: Option<Vector2>,
 
     base: Base<Node3D>,
 }
@@ -32,6 +33,7 @@ impl INode3D for CameraRigOrbit {
             camera: Camera3D::new_alloc(),
 
             distance: 10.0,
+            stashed_mouse_pos: None,
 
             base,
         }
@@ -93,9 +95,18 @@ impl CameraRigOrbit {
             self.zoom_out();
         }
         if input.is_action_pressed("camera_mod_rotate") {
-            input.set_mouse_mode(MouseMode::CAPTURED)
+            if input.get_mouse_mode() == MouseMode::VISIBLE {
+                if let Some(vport) = self.base().get_viewport() {
+                    self.stashed_mouse_pos = Some(vport.get_mouse_position());
+                }
+            }
+            input.set_mouse_mode(MouseMode::CAPTURED);
         } else {
-            input.set_mouse_mode(MouseMode::VISIBLE)
+            input.set_mouse_mode(MouseMode::VISIBLE);
+            if let Some(pos) = self.stashed_mouse_pos {
+                input.warp_mouse(pos);
+                self.stashed_mouse_pos = None;
+            }
         }
 
         let move_x = input.get_axis("camera_move_left", "camera_move_right");

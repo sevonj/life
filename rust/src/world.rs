@@ -8,7 +8,7 @@ use godot::global::MouseButton;
 use godot::prelude::*;
 
 use crate::{
-    ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode
+    lot_builder, ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, LotBuilder, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode
 };
 
 #[derive(Debug, GodotClass)]
@@ -18,6 +18,8 @@ pub struct World {
     furniture: Vec<Gd<Furniture>>,
     selected_person: Option<Gd<Person>>,
     view_mode: WorldViewMode,
+
+    lot_builder: Option<Gd<LotBuilder>>,
 
     ui_root: Gd<VBoxContainer>,
     ui_taskbar: Gd<UiWorldTaskbar>,
@@ -48,6 +50,8 @@ impl INode for World {
             selected_person: None,
             view_mode: WorldViewMode::default(),
 
+            lot_builder: Some(LotBuilder::new_alloc()),
+
             ui_root,
             ui_taskbar,
 
@@ -62,6 +66,9 @@ impl INode for World {
 
     fn ready(&mut self) {
         self.base_mut().set_process_mode(ProcessMode::ALWAYS);
+
+        let lot_builder = self.lot_builder.clone().unwrap();
+        self.base_mut().add_child(&lot_builder);
 
         self.setup_ui();
         self.setup_scene();

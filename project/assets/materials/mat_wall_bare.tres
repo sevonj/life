@@ -9,3 +9,4 @@ albedo_texture = ExtResource("1_h7k8l")
 orm_texture = ExtResource("3_bdu3c")
 normal_enabled = true
 normal_texture = ExtResource("2_jhm38")
+uv1_triplanar = true

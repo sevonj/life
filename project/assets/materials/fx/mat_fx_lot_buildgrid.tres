@@ -1,0 +1,7 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://chkh4ogsbpi83"]
+
+[ext_resource type="Shader" path="res://assets/materials/fx/shad_fx_lot_buildgrid.gdshader" id="1_j7rju"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_j7rju")
