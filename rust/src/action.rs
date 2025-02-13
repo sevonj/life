@@ -1,6 +1,6 @@
 use godot::prelude::*;
 
-use crate::furniture::Furniture;
+use crate::Furniture;
 
 #[derive(Debug, Clone)]
 pub struct Action {

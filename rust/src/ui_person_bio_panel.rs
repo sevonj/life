@@ -6,7 +6,7 @@ use godot::{
     prelude::*,
 };
 
-use crate::{person::Task, Person};
+use crate::{Task, Person};
 
 const MIN_W: f32 = 128.0;
 

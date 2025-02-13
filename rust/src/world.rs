@@ -1,19 +1,14 @@
 //! Class: [World]
 //! Desc: World root node
 //!
-use godot::prelude::*;
-use godot::{
-    classes::{
-        control::{LayoutPreset, MouseFilter, SizeFlags},
-        node::ProcessMode,
-        BoxShape3D, Control, Engine, InputEvent, InputEventMouseButton, Shape3D, VBoxContainer,
-    },
-    global::MouseButton,
+use godot::classes::{
+    control::{LayoutPreset, MouseFilter, SizeFlags}, node::ProcessMode, BoxShape3D, Control, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D, VBoxContainer
 };
+use godot::global::MouseButton;
+use godot::prelude::*;
 
 use crate::{
-    ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, Person,
-    UiWorldTaskbar, WorldEnv, WorldViewMode,
+    ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode
 };
 
 #[derive(Debug, GodotClass)]
@@ -30,6 +25,7 @@ pub struct World {
     scn_root: Gd<Node3D>,
     scn_env: Gd<WorldEnv>,
     scn_camera_rig: Gd<CameraRigOrbit>,
+    scn_lot_walls: LotWalls,
 
     base: Base<Node>,
 }
@@ -44,6 +40,8 @@ impl INode for World {
         let scn_env = WorldEnv::new_alloc();
         let scn_camera_rig = CameraRigOrbit::new_alloc();
 
+        let scn_lot_walls = LotWalls::with_test_layout();
+
         Self {
             people: vec![],
             furniture: vec![],
@@ -56,6 +54,7 @@ impl INode for World {
             scn_root,
             scn_camera_rig,
             scn_env,
+            scn_lot_walls,
 
             base,
         }
@@ -153,18 +152,23 @@ impl World {
     }
 
     fn setup_scene(&mut self) {
+        self.scn_camera_rig.set_name("scn_camera_rig");
+
         self.scn_env.set_name("scn_env");
 
         let terrain_packed: Gd<PackedScene> = load("res://assets/models/mdl_lot_32x32.blend");
         let mut terrain = terrain_packed.instantiate().unwrap();
         terrain.set_name("terrain");
 
-        self.scn_camera_rig.set_name("scn_camera_rig");
+        let mut lot_walls = MeshInstance3D::new_alloc();
+        lot_walls.set_mesh(&self.scn_lot_walls.generate_mesh());
+        lot_walls.set_name("lot_walls");
 
         let mut scn_root = self.scn_root.clone();
+        scn_root.add_child(&self.scn_camera_rig);
         scn_root.add_child(&self.scn_env);
         scn_root.add_child(&terrain);
-        scn_root.add_child(&self.scn_camera_rig);
+        scn_root.add_child(&lot_walls);
         scn_root.set_process_mode(ProcessMode::PAUSABLE);
         scn_root.set_name("scn_root");
 

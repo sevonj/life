@@ -1,6 +1,6 @@
 use godot::{classes::Node3D, obj::Gd};
 
-use crate::furniture::Furniture;
+use crate::Furniture;
 
 /// Describes an action a Person can perform on an entity.
 #[derive(Debug, Clone)]
