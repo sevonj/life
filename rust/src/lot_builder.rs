@@ -2,6 +2,8 @@ use godot::classes::{mesh::PrimitiveType, ArrayMesh, Material, MeshInstance3D, S
 use godot::classes::{CsgBox3D, CsgSphere3D};
 use godot::prelude::*;
 
+use crate::LotBuilderGrid;
+
 #[derive(Debug)]
 enum LotBuilderTool {
     None,
@@ -12,7 +14,7 @@ enum LotBuilderTool {
 #[derive(Debug, GodotClass)]
 #[class(base=Node)]
 pub struct LotBuilder {
-    grid: Gd<MeshInstance3D>,
+    grid: Gd<LotBuilderGrid>,
     grid_hover_indicator: Gd<CsgSphere3D>,
 
     tool: LotBuilderTool,
@@ -28,7 +30,7 @@ pub struct LotBuilder {
 impl INode for LotBuilder {
     fn init(base: Base<Self::Base>) -> Self {
         Self {
-            grid: MeshInstance3D::new_alloc(),
+            grid: LotBuilderGrid::new_alloc(),
             grid_hover_indicator: CsgSphere3D::new_alloc(),
 
             tool: LotBuilderTool::WallBuild(None),
@@ -54,7 +56,6 @@ impl INode for LotBuilder {
 impl LotBuilder {
     fn setup_scene(&mut self) {
         let mut grid = self.grid.clone();
-        grid.set_mesh(&self.build_lot_grid());
         grid.set_position(Vector3::UP * 0.2);
         grid.set_name("grid");
 
@@ -250,82 +251,5 @@ impl LotBuilder {
         }
     }
 
-    fn build_lot_grid(&self) -> Gd<ArrayMesh> {
-        let mut st = SurfaceTool::new_gd();
-
-        const LINE_W: f32 = 0.04;
-        const W: f32 = LINE_W / 2.0;
-        const WE: f32 = 1.0 - W;
-
-        st.begin(PrimitiveType::TRIANGLE_STRIP);
-
-        fn add_l(
-            st: &mut SurfaceTool,
-            a: Vector3,
-            b: Vector3,
-            c: Vector3,
-            d: Vector3,
-            e: Vector3,
-            f: Vector3,
-        ) {
-            st.add_vertex(a); // Duplicate for degen triangle
-            st.add_vertex(a);
-            st.add_vertex(b);
-            st.add_vertex(c);
-            st.add_vertex(d);
-            st.add_vertex(e);
-            st.add_vertex(f);
-            st.add_vertex(f); // Duplicate for degen triangle
-        }
-
-        fn add_tile(st: &mut SurfaceTool, offset: Vector3) {
-            add_l(
-                st,
-                Vector3::new(0.00, 0.0, 0.25) + offset,
-                Vector3::new(W, 0.0, 0.25) + offset,
-                Vector3::new(0.00, 0.0, 0.00) + offset,
-                Vector3::new(W, 0.0, W) + offset,
-                Vector3::new(0.25, 0.0, 0.00) + offset,
-                Vector3::new(0.25, 0.0, W) + offset,
-            );
-            add_l(
-                st,
-                Vector3::new(0.75, 0.0, 0.00) + offset,
-                Vector3::new(0.75, 0.0, W) + offset,
-                Vector3::new(1.00, 0.0, 0.00) + offset,
-                Vector3::new(WE, 0.0, W) + offset,
-                Vector3::new(1.00, 0.0, 0.25) + offset,
-                Vector3::new(WE, 0.0, 0.25) + offset,
-            );
-            add_l(
-                st,
-                Vector3::new(1.00, 0.0, 0.75) + offset,
-                Vector3::new(WE, 0.0, 0.75) + offset,
-                Vector3::new(1.00, 0.0, 1.00) + offset,
-                Vector3::new(WE, 0.0, WE) + offset,
-                Vector3::new(0.75, 0.0, 1.00) + offset,
-                Vector3::new(0.75, 0.0, WE) + offset,
-            );
-            add_l(
-                st,
-                Vector3::new(0.25, 0.0, 1.00) + offset,
-                Vector3::new(0.25, 0.0, WE) + offset,
-                Vector3::new(0.00, 0.0, 1.00) + offset,
-                Vector3::new(W, 0.0, WE) + offset,
-                Vector3::new(0.00, 0.0, 0.75) + offset,
-                Vector3::new(W, 0.0, 0.75) + offset,
-            );
-        }
-
-        for x in 0..32 {
-            for z in 0..32 {
-                add_tile(&mut st, Vector3::new(x as f32, 0.0, z as f32));
-            }
-        }
-
-        let material: Gd<Material> = load("res://assets/materials/fx/mat_fx_lot_buildgrid.tres");
-        st.set_material(&material);
-
-        st.commit().unwrap()
-    }
+    
 }
