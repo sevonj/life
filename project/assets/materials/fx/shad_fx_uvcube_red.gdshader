@@ -7,7 +7,7 @@ void vertex() {
 
 void fragment() {
 	ALBEDO.r = UV.x;
-	ALBEDO.b = UV.y;
+	ALBEDO.g = 0.0;
 	ALBEDO.b = 0.0;
 }
 

@@ -45,12 +45,12 @@ impl Wall {
 
 #[derive(Debug, Clone)]
 pub struct Walls {
-    walls: Vec<Wall>,
+    walls: HashMap<(Vector2i, Vector2i), Wall>,
 }
 
 impl Walls {
     pub fn with_test_layout() -> Self {
-        let walls = vec![
+        let wall_vec = vec![
             Wall::new(Vector2i::new(4, 8), Vector2i::new(5, 8)).unwrap(),
             Wall::new(Vector2i::new(4, 8), Vector2i::new(4, 9)).unwrap(),
             //LotWall::new(Vector2i::new(4, 9), Vector2i::new(4, 10)).unwrap(),
@@ -62,32 +62,11 @@ impl Walls {
             Wall::new(Vector2i::new(4, 15), Vector2i::new(4, 16)).unwrap(),
             Wall::new(Vector2i::new(4, 16), Vector2i::new(5, 16)).unwrap(),
         ];
-        /*
-        let wall_vertices = vec![
-            Vector2i::new(5, 8),
-            Vector2i::new(4, 8),
-            Vector2i::new(4, 9),
-            Vector2i::new(4, 10),
-            Vector2i::new(4, 11),
-            Vector2i::new(4, 12),
-            Vector2i::new(4, 13),
-            Vector2i::new(4, 14),
-            Vector2i::new(4, 15),
-            Vector2i::new(4, 16),
-            Vector2i::new(5, 16),
-        ];
-        let wall_edges = vec![
-            (0, 1),
-            (1, 2),
-            //(2, 3),
-            (3, 4),
-            (4, 5),
-            (5, 6),
-            (6, 7),
-            (7, 8),
-            (8, 9),
-            (9, 10),
-        ];*/
+
+        let mut walls = HashMap::new();
+        for wall in wall_vec {
+            walls.insert(wall.span(), wall);
+        }
 
         let this = Self { walls };
 
@@ -95,7 +74,26 @@ impl Walls {
     }
 
     pub fn add_wall(&mut self, wall: Wall) {
-        self.walls.push(wall);
+        let k = Self::span_sorted(wall.span());
+        self.walls.insert(k, wall);
+    }
+
+    pub fn remove_wall(&mut self, span: (Vector2i, Vector2i)) {
+        let k = Self::span_sorted(span);
+        self.walls.remove(&k);
+    }
+
+    /// Smaller X first. If X are equal, smaller Y first.
+    const fn span_sorted(span: (Vector2i, Vector2i)) -> (Vector2i, Vector2i) {
+        if span.0.x < span.1.x {
+            return (span.0, span.1);
+        }
+        if span.0.x == span.1.x {
+            if span.0.y < span.1.y {
+                return (span.0, span.1);
+            }
+        }
+        (span.1, span.0)
     }
 
     pub fn to_mesh(&self) -> Gd<ArrayMesh> {
@@ -103,7 +101,7 @@ impl Walls {
         // val: connected neighbor coordinates
         let mut connections = HashMap::new();
 
-        for wall in &self.walls {
+        for wall in self.walls.values() {
             let a = wall.span().0;
             let b = wall.span().1;
             if !connections.contains_key(&a) {
@@ -156,16 +154,8 @@ impl Walls {
 
         for a in connections.keys() {
             for b in &connections[a] {
-                let v_a = Vector2::new(
-                    //self.wall_vertices[**a].x as f32,
-                    //self.wall_vertices[**a].y as f32,
-                    a.x as f32, a.y as f32,
-                );
-                let v_b = Vector2::new(
-                    //self.wall_vertices[**b].x as f32,
-                    //self.wall_vertices[**b].y as f32,
-                    b.x as f32, b.y as f32,
-                );
+                let v_a = Vector2::new(a.x as f32, a.y as f32);
+                let v_b = Vector2::new(b.x as f32, b.y as f32);
                 let dir = Vector3::new(v_b.x - v_a.x, 0.0, v_b.y - v_a.y).normalized();
 
                 let normal_2d = (v_b - v_a).normalized().rotated(deg_to_rad(90.0) as f32);
@@ -201,19 +191,11 @@ impl Walls {
         }
 
         // top cap
-        for wall in &self.walls {
+        for wall in self.walls.values() {
             let a = wall.span().0;
             let b = wall.span().1;
-            let v_a = Vector2::new(
-                //self.wall_vertices[**a].x as f32,
-                //self.wall_vertices[**a].y as f32,
-                a.x as f32, a.y as f32,
-            );
-            let v_b = Vector2::new(
-                //self.wall_vertices[**b].x as f32,
-                //self.wall_vertices[**b].y as f32,
-                b.x as f32, b.y as f32,
-            );
+            let v_a = Vector2::new(a.x as f32, a.y as f32);
+            let v_b = Vector2::new(b.x as f32, b.y as f32);
 
             let normal_2d = (v_b - v_a).normalized().rotated(deg_to_rad(90.0) as f32);
             let normal = Vector3::new(normal_2d.x, 0.0, normal_2d.y);
