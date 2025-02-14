@@ -2,7 +2,7 @@ use godot::classes::{mesh::PrimitiveType, ArrayMesh, Material, MeshInstance3D, S
 use godot::classes::{CsgBox3D, CsgSphere3D};
 use godot::prelude::*;
 
-use crate::LotBuilderGrid;
+use crate::{LotBuilderGizmo, LotBuilderGrid};
 
 #[derive(Debug)]
 enum LotBuilderTool {
@@ -15,10 +15,10 @@ enum LotBuilderTool {
 #[class(base=Node)]
 pub struct LotBuilder {
     grid: Gd<LotBuilderGrid>,
-    grid_hover_indicator: Gd<CsgSphere3D>,
+    grid_hover_indicator: Gd<LotBuilderGizmo>,
 
     tool: LotBuilderTool,
-    tool_helper: Gd<CsgSphere3D>,
+    tool_helper: Gd<LotBuilderGizmo>,
 
     // Parent of temporary wall graphics
     wall_temp_root: Gd<Node3D>,
@@ -31,10 +31,10 @@ impl INode for LotBuilder {
     fn init(base: Base<Self::Base>) -> Self {
         Self {
             grid: LotBuilderGrid::new_alloc(),
-            grid_hover_indicator: CsgSphere3D::new_alloc(),
+            grid_hover_indicator: LotBuilderGizmo::new_alloc(),
 
             tool: LotBuilderTool::WallBuild(None),
-            tool_helper: CsgSphere3D::new_alloc(),
+            tool_helper: LotBuilderGizmo::new_alloc(),
 
             wall_temp_root: Node3D::new_alloc(),
 
@@ -60,23 +60,9 @@ impl LotBuilder {
         grid.set_name("grid");
 
         let mut grid_hover_indicator = self.grid_hover_indicator.clone();
-        grid_hover_indicator.set_radius(0.2);
-        grid_hover_indicator.set_smooth_faces(false);
-        grid_hover_indicator.set_radial_segments(4);
-        grid_hover_indicator.set_rings(2);
-        let grid_hover_indicator_mat: Gd<Material> =
-            load("res://assets/materials/fx/mat_fx_uvcube.tres");
-        grid_hover_indicator.set_material(&grid_hover_indicator_mat);
         grid_hover_indicator.set_name("grid_hover_indicator");
 
         let mut tool_helper = self.tool_helper.clone();
-        tool_helper.set_radius(0.2);
-        tool_helper.set_smooth_faces(false);
-        tool_helper.set_radial_segments(4);
-        tool_helper.set_rings(2);
-        let grid_hover_indicator_mat: Gd<Material> =
-            load("res://assets/materials/fx/mat_fx_uvcube2.tres");
-        tool_helper.set_material(&grid_hover_indicator_mat);
         tool_helper.set_name("tool_helper");
 
         let mut wall_temp_root = self.wall_temp_root.clone();
