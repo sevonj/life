@@ -6,12 +6,12 @@ use godot::prelude::*;
 #[derive(Debug, GodotClass)]
 #[class(base=CsgSphere3D)]
 
-pub struct LotBuilderGizmo {
+pub struct ToolGizmo {
     base: Base<CsgSphere3D>,
 }
 
 #[godot_api]
-impl ICsgSphere3D for LotBuilderGizmo {
+impl ICsgSphere3D for ToolGizmo {
     fn init(base: Base<Self::Base>) -> Self {
         Self { base }
     }
@@ -21,7 +21,7 @@ impl ICsgSphere3D for LotBuilderGizmo {
     }
 }
 
-impl LotBuilderGizmo {
+impl ToolGizmo {
     fn setup_model(&mut self) {
         self.base_mut().set_radius(0.2);
         self.base_mut().set_smooth_faces(false);

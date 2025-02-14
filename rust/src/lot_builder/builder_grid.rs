@@ -5,12 +5,12 @@ use godot::prelude::*;
 
 #[derive(Debug, GodotClass)]
 #[class(base=MeshInstance3D)]
-pub struct LotBuilderGrid {
+pub struct BuilderGrid {
     base: Base<MeshInstance3D>,
 }
 
 #[godot_api]
-impl IMeshInstance3D for LotBuilderGrid {
+impl IMeshInstance3D for BuilderGrid {
     fn init(base: Base<Self::Base>) -> Self {
         Self { base }
     }
@@ -21,7 +21,7 @@ impl IMeshInstance3D for LotBuilderGrid {
     }
 }
 
-impl LotBuilderGrid {
+impl BuilderGrid {
     fn build_mesh(&self) -> Gd<ArrayMesh> {
         let mut st = SurfaceTool::new_gd();
 

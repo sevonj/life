@@ -8,13 +8,13 @@ use godot::{
 
 const WALL_THICKNESS: f32 = 0.15;
 
-#[derive(Debug)]
-struct LotWall {
+#[derive(Debug, Clone)]
+pub struct Wall {
     /// For now, keep span length 1!
     span: (Vector2i, Vector2i),
 }
 
-impl LotWall {
+impl Wall {
     pub fn new(start: Vector2i, end: Vector2i) -> Result<Self, String> {
         let span_relative = end - start;
         if span_relative == Vector2i::ZERO {
@@ -43,26 +43,24 @@ impl LotWall {
     }
 }
 
-#[derive(Debug)]
-pub struct LotWalls {
-    walls: Vec<LotWall>,
-    //wall_vertices: Vec<Vector2i>,
-    //wall_edges: Vec<(usize, usize)>,
+#[derive(Debug, Clone)]
+pub struct Walls {
+    walls: Vec<Wall>,
 }
 
-impl LotWalls {
+impl Walls {
     pub fn with_test_layout() -> Self {
         let walls = vec![
-            LotWall::new(Vector2i::new(4, 8), Vector2i::new(5, 8)).unwrap(),
-            LotWall::new(Vector2i::new(4, 8), Vector2i::new(4, 9)).unwrap(),
+            Wall::new(Vector2i::new(4, 8), Vector2i::new(5, 8)).unwrap(),
+            Wall::new(Vector2i::new(4, 8), Vector2i::new(4, 9)).unwrap(),
             //LotWall::new(Vector2i::new(4, 9), Vector2i::new(4, 10)).unwrap(),
-            LotWall::new(Vector2i::new(4, 10), Vector2i::new(4, 11)).unwrap(),
-            LotWall::new(Vector2i::new(4, 11), Vector2i::new(4, 12)).unwrap(),
-            LotWall::new(Vector2i::new(4, 12), Vector2i::new(4, 13)).unwrap(),
-            LotWall::new(Vector2i::new(4, 13), Vector2i::new(4, 14)).unwrap(),
-            LotWall::new(Vector2i::new(4, 14), Vector2i::new(4, 15)).unwrap(),
-            LotWall::new(Vector2i::new(4, 15), Vector2i::new(4, 16)).unwrap(),
-            LotWall::new(Vector2i::new(4, 16), Vector2i::new(5, 16)).unwrap(),
+            Wall::new(Vector2i::new(4, 10), Vector2i::new(4, 11)).unwrap(),
+            Wall::new(Vector2i::new(4, 11), Vector2i::new(4, 12)).unwrap(),
+            Wall::new(Vector2i::new(4, 12), Vector2i::new(4, 13)).unwrap(),
+            Wall::new(Vector2i::new(4, 13), Vector2i::new(4, 14)).unwrap(),
+            Wall::new(Vector2i::new(4, 14), Vector2i::new(4, 15)).unwrap(),
+            Wall::new(Vector2i::new(4, 15), Vector2i::new(4, 16)).unwrap(),
+            Wall::new(Vector2i::new(4, 16), Vector2i::new(5, 16)).unwrap(),
         ];
         /*
         let wall_vertices = vec![
@@ -96,7 +94,11 @@ impl LotWalls {
         this
     }
 
-    pub fn generate_mesh(&self) -> Gd<ArrayMesh> {
+    pub fn add_wall(&mut self, wall: Wall) {
+        self.walls.push(wall);
+    }
+
+    pub fn to_mesh(&self) -> Gd<ArrayMesh> {
         // key: coordinate
         // val: connected neighbor coordinates
         let mut connections = HashMap::new();

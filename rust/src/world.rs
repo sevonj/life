@@ -10,8 +10,8 @@ use godot::global::MouseButton;
 use godot::prelude::*;
 
 use crate::{
-    lot_builder, ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture,
-    LotBuilder, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode,
+    lot_builder::LotBuilder, lot_data, ActionAdvertisement, ActionAdvertisementStat,
+    CameraRigOrbit, Furniture, Person, UiWorldTaskbar, WorldEnv, WorldViewMode,
 };
 
 #[derive(Debug, GodotClass)]
@@ -30,7 +30,7 @@ pub struct World {
     scn_root: Gd<Node3D>,
     scn_env: Gd<WorldEnv>,
     scn_camera_rig: Gd<CameraRigOrbit>,
-    scn_lot_walls: LotWalls,
+    scn_lot_walls: lot_data::Walls,
 
     base: Base<Node>,
 }
@@ -45,7 +45,7 @@ impl INode for World {
         let scn_env = WorldEnv::new_alloc();
         let scn_camera_rig = CameraRigOrbit::new_alloc();
 
-        let scn_lot_walls = LotWalls::with_test_layout();
+        let scn_lot_walls = lot_data::Walls::with_test_layout();
 
         Self {
             people: vec![],
@@ -205,7 +205,7 @@ impl World {
         terrain.set_name("terrain");
 
         let mut lot_walls = MeshInstance3D::new_alloc();
-        lot_walls.set_mesh(&self.scn_lot_walls.generate_mesh());
+        lot_walls.set_mesh(&self.scn_lot_walls.to_mesh());
         lot_walls.set_name("lot_walls");
 
         let mut scn_root = self.scn_root.clone();
