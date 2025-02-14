@@ -6,9 +6,9 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO.r = UV.x;
-	ALBEDO.g = 0.0;
-	ALBEDO.b = 0.0;
+	ALBEDO.r = 1.0;
+	ALBEDO.g = UV.x;
+	ALBEDO.b = UV.x;
 }
 
 //void light() {

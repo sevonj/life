@@ -1,4 +1,4 @@
-use godot::classes::{INode, Viewport};
+use godot::classes::Viewport;
 
 use godot::prelude::*;
 

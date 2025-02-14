@@ -30,7 +30,9 @@ pub struct World {
     scn_root: Gd<Node3D>,
     scn_env: Gd<WorldEnv>,
     scn_camera_rig: Gd<CameraRigOrbit>,
-    scn_lot_walls: lot_data::Walls,
+    scn_lot_walls: Gd<MeshInstance3D>,
+
+    data_walls: lot_data::Walls,
 
     base: Base<Node>,
 }
@@ -44,8 +46,9 @@ impl INode for World {
         let scn_root = Node3D::new_alloc();
         let scn_env = WorldEnv::new_alloc();
         let scn_camera_rig = CameraRigOrbit::new_alloc();
+        let scn_lot_walls = MeshInstance3D::new_alloc();
 
-        let scn_lot_walls = lot_data::Walls::with_test_layout();
+        let data_walls = lot_data::Walls::with_test_layout();
 
         Self {
             people: vec![],
@@ -63,15 +66,14 @@ impl INode for World {
             scn_env,
             scn_lot_walls,
 
+            data_walls,
+
             base,
         }
     }
 
     fn ready(&mut self) {
         self.base_mut().set_process_mode(ProcessMode::ALWAYS);
-
-        //let lot_builder = self.lot_builder.clone().unwrap();
-        //self.base_mut().add_child(&lot_builder);
 
         self.setup_ui();
         self.setup_scene();
@@ -86,10 +88,13 @@ impl INode for World {
 
         if input.is_action_just_pressed("mode_play") {
             self.set_view_mode(WorldViewMode::Play);
+            self.scn_lot_walls.show();
         } else if input.is_action_just_pressed("mode_buy") {
             self.set_view_mode(WorldViewMode::Buy);
+            self.scn_lot_walls.show();
         } else if input.is_action_just_pressed("mode_build") {
             self.set_view_mode(WorldViewMode::Build);
+            self.scn_lot_walls.hide();
         }
     }
 
@@ -116,6 +121,20 @@ impl World {
 
     #[func]
     pub fn set_view_mode(&mut self, mode: WorldViewMode) {
+        if mode == self.view_mode {
+            return;
+        }
+
+        if mode != WorldViewMode::Build {
+            if let Some(lot_builder) = &mut self.lot_builder {
+                self.data_walls = lot_builder.bind().wall_data().clone();
+                lot_builder.queue_free();
+                self.lot_builder = None;
+
+                self.rebuild_building_mesh();
+            }
+        }
+
         match mode {
             WorldViewMode::Build => {
                 self.base_mut().get_tree().unwrap().set_pause(true);
@@ -124,7 +143,8 @@ impl World {
                     godot_error!("wtf, lot builder exists already!");
                     lot_builder.queue_free();
                 }
-                let mut lot_builder = LotBuilder::new_alloc();
+                let mut lot_builder =
+                    LotBuilder::new(self.data_walls.clone(), self.scn_lot_walls.clone());
                 lot_builder.set_name("lot_builder");
 
                 self.base_mut().add_child(&lot_builder);
@@ -132,19 +152,9 @@ impl World {
             }
             WorldViewMode::Buy => {
                 self.base_mut().get_tree().unwrap().set_pause(true);
-
-                if let Some(lot_builder) = &mut self.lot_builder {
-                    lot_builder.queue_free();
-                    self.lot_builder = None;
-                }
             }
             WorldViewMode::Play => {
                 self.base_mut().get_tree().unwrap().set_pause(false);
-
-                if let Some(lot_builder) = &mut self.lot_builder {
-                    lot_builder.queue_free();
-                    self.lot_builder = None;
-                }
             }
         }
         self.view_mode = mode;
@@ -178,8 +188,8 @@ impl World {
 
         self.ui_taskbar
             .set_anchors_preset(LayoutPreset::BOTTOM_LEFT);
-        let this_gd = self.to_gd();
-        self.ui_taskbar.bind_mut().connect_world(this_gd);
+        // let this_gd = self.to_gd();
+        // self.ui_taskbar.bind_mut().connect_world(this_gd);
         self.ui_taskbar.set_name("ui_taskbar");
 
         let mut ui_root = self.ui_root.clone();
@@ -204,19 +214,20 @@ impl World {
         let mut terrain = terrain_packed.instantiate().unwrap();
         terrain.set_name("terrain");
 
-        let mut lot_walls = MeshInstance3D::new_alloc();
-        lot_walls.set_mesh(&self.scn_lot_walls.to_mesh());
-        lot_walls.set_name("lot_walls");
+        let mut scn_lot_walls = self.scn_lot_walls.clone();
+        scn_lot_walls.set_name("lot_walls");
 
         let mut scn_root = self.scn_root.clone();
         scn_root.add_child(&self.scn_camera_rig);
         scn_root.add_child(&self.scn_env);
         scn_root.add_child(&terrain);
-        scn_root.add_child(&lot_walls);
+        scn_root.add_child(&scn_lot_walls);
         scn_root.set_process_mode(ProcessMode::PAUSABLE);
         scn_root.set_name("scn_root");
 
         self.base_mut().add_child(&scn_root);
+
+        self.rebuild_building_mesh();
     }
 
     fn setup_objects(&mut self) {
@@ -411,5 +422,10 @@ impl World {
     pub fn select_person(&mut self, person: Option<Gd<Person>>) {
         self.selected_person = person.clone();
         self.ui_taskbar.bind_mut().select_person(person);
+    }
+
+    fn rebuild_building_mesh(&mut self) {
+        let mesh = self.data_walls.to_mesh();
+        self.scn_lot_walls.set_mesh(&mesh);
     }
 }

@@ -1,6 +1,6 @@
 use godot::{classes::MeshInstance3D, prelude::*};
 
-use super::{tool_helper, ToolGizmo};
+use super::{tool_gizmo::ToolGizmoStyle, tool_helper, LotBuilder, ToolGizmo};
 use crate::lot_data::{self, Wall};
 
 #[derive(Debug, Default)]
@@ -11,46 +11,51 @@ enum WallToolMode {
 }
 
 #[derive(Debug, GodotClass)]
-#[class(base=Node)]
+#[class(no_init, base=Node)]
 pub struct WallTool {
-    wall_data: lot_data::Walls,
+    builder: Gd<LotBuilder>,
+
+    //wall_data: lot_data::Walls,
     tool_mode: WallToolMode,
     /// In-progress tool operation, if any.
     tool_span: Option<(Vector2i, Vector2i)>,
+    /// Indicates where the tool would hit if used or committed.
+    gizmo_action: Gd<ToolGizmo>,
+    /// Visible when [tool_span] is Some.
+    gizmo_span_start: Gd<ToolGizmo>,
 
     wall_preview: Gd<MeshInstance3D>,
-
-    tool_span_start_gizmo: Gd<ToolGizmo>,
-    tool_hover_gizmo: Gd<ToolGizmo>,
 
     base: Base<Node>,
 }
 
 #[godot_api]
 impl INode for WallTool {
-    fn init(base: Base<Self::Base>) -> Self {
+    /*fn init(base: Base<Self::Base>) -> Self {
+        godot_warn!("Loaded wall tool with dummy test data.");
+
         Self {
             wall_data: lot_data::Walls::with_test_layout(),
             tool_mode: WallToolMode::default(),
             tool_span: None,
+            gizmo_action: ToolGizmo::new_alloc(),
+            gizmo_span_start: ToolGizmo::new_alloc(),
 
             wall_preview: MeshInstance3D::new_alloc(),
 
-            tool_span_start_gizmo: ToolGizmo::new_alloc(),
-            tool_hover_gizmo: ToolGizmo::new_alloc(),
-
             base,
         }
-    }
+    }*/
 
     fn ready(&mut self) {
         self.setup_gizmos();
         self.setup_scene();
+
+        self.rebuild_mesh();
     }
 
     fn process(&mut self, _delta: f64) {
-        let _input = Input::singleton();
-
+        self.process_tool_mode();
         self.process_tool();
         self.process_tool_span_start_gizmo();
         self.process_tool_hover_gizmo();
@@ -58,11 +63,27 @@ impl INode for WallTool {
 }
 
 impl WallTool {
+    pub fn new(builder: Gd<LotBuilder>) -> Gd<Self> {
+        Gd::from_init_fn(|base| Self {
+            builder,
+
+            //wall_data: lot_data::Walls::with_test_layout(),
+            tool_mode: WallToolMode::default(),
+            tool_span: None,
+            gizmo_action: ToolGizmo::new_alloc(),
+            gizmo_span_start: ToolGizmo::new_alloc(),
+
+            wall_preview: MeshInstance3D::new_alloc(),
+
+            base,
+        })
+    }
+
     fn setup_gizmos(&mut self) {
-        let mut tool_span_start_gizmo = self.tool_span_start_gizmo.clone();
+        let mut tool_span_start_gizmo = self.gizmo_span_start.clone();
         tool_span_start_gizmo.set_name("tool_span_start_gizmo");
 
-        let mut tool_hover_gizmo = self.tool_hover_gizmo.clone();
+        let mut tool_hover_gizmo = self.gizmo_action.clone();
         tool_hover_gizmo.set_name("tool_hover_gizmo");
 
         self.base_mut().add_child(&tool_span_start_gizmo);
@@ -74,6 +95,40 @@ impl WallTool {
         wall_preview.set_name("wall_preview");
 
         self.base_mut().add_child(&wall_preview);
+    }
+
+    fn process_tool_mode(&mut self) {
+        // No changing modes with an ongoing operation
+        if self.tool_span.is_some() {
+            return;
+        }
+
+        let input = Input::singleton();
+        if input.is_action_pressed("tool_mod_alt") {
+            if self.gizmo_action.bind().style() != ToolGizmoStyle::Destructive {
+                self.gizmo_action
+                    .bind_mut()
+                    .set_style(ToolGizmoStyle::Destructive);
+            }
+            if self.gizmo_span_start.bind().style() != ToolGizmoStyle::Destructive {
+                self.gizmo_span_start
+                    .bind_mut()
+                    .set_style(ToolGizmoStyle::Destructive);
+            }
+            self.tool_mode = WallToolMode::Remove;
+        } else {
+            if self.gizmo_action.bind().style() != ToolGizmoStyle::Normal {
+                self.gizmo_action
+                    .bind_mut()
+                    .set_style(ToolGizmoStyle::Normal);
+            }
+            if self.gizmo_span_start.bind().style() != ToolGizmoStyle::Normal {
+                self.gizmo_span_start
+                    .bind_mut()
+                    .set_style(ToolGizmoStyle::Normal);
+            }
+            self.tool_mode = WallToolMode::Add;
+        };
     }
 
     fn process_tool(&mut self) {
@@ -120,9 +175,20 @@ impl WallTool {
         if input.is_action_just_pressed("tool_commit") {
             if hover_coord_opt.is_some() {
                 self.tool_span = None;
-                self.add_span(span);
-                let mesh = self.wall_data.to_mesh();
-                self.wall_preview.set_mesh(&mesh);
+                match self.tool_mode {
+                    WallToolMode::Add => {
+                        for piece in self.break_span(span) {
+                            let wall = Wall::new(piece.0, piece.1).unwrap();
+                            self.add_wall(wall);
+                        }
+                    }
+                    WallToolMode::Remove => {
+                        for piece in self.break_span(span) {
+                            self.remove_wall(piece);
+                        }
+                    }
+                }
+                self.rebuild_mesh();
                 return;
             }
         }
@@ -130,14 +196,11 @@ impl WallTool {
 
     fn process_tool_span_start_gizmo(&mut self) {
         if let Some(span) = self.tool_span {
-            self.tool_span_start_gizmo.show();
-            self.tool_span_start_gizmo.set_position(Vector3::new(
-                span.0.x as f32,
-                0.4,
-                span.0.y as f32,
-            ));
+            self.gizmo_span_start.show();
+            self.gizmo_span_start
+                .set_position(Vector3::new(span.0.x as f32, 0.4, span.0.y as f32));
         } else {
-            self.tool_span_start_gizmo.hide();
+            self.gizmo_span_start.hide();
         }
     }
 
@@ -157,49 +220,50 @@ impl WallTool {
             .flatten();
 
         let Some(hover_coord) = hover_coord_opt else {
-            self.tool_hover_gizmo.hide();
+            self.gizmo_action.hide();
             return;
         };
-        self.tool_hover_gizmo.show();
+        self.gizmo_action.show();
 
-        // Free hover coord or locked to span end.
         let pos = match self.tool_span {
             Some(span) => Vector3::new(span.1.x as f32, 0.4, span.1.y as f32),
             None => Vector3::new(hover_coord.x as f32, 0.4, hover_coord.y as f32),
         };
-        self.tool_hover_gizmo.set_position(pos);
+        self.gizmo_action.set_position(pos);
     }
 
-    fn add_span(&mut self, span: (Vector2i, Vector2i)) {
+    /// Break a span into 1-len pieces
+    fn break_span(&mut self, span: (Vector2i, Vector2i)) -> Vec<(Vector2i, Vector2i)> {
         let relative = span.1 - span.0;
-        let mut wall_segments = vec![];
+        let mut span_pieces = vec![];
 
         if relative.x == 0 {
             let y_min = span.0.y.min(span.1.y);
             let y_max = span.0.y.max(span.1.y);
             for y in y_min..y_max {
-                wall_segments.push(Wall::new(
-                    Vector2i::new(span.0.x, y),
-                    Vector2i::new(span.0.x, y + 1),
-                ));
+                span_pieces.push((Vector2i::new(span.0.x, y), Vector2i::new(span.0.x, y + 1)));
             }
         } else {
             let x_min = span.0.x.min(span.1.x);
             let x_max = span.0.x.max(span.1.x);
             for x in x_min..x_max {
-                wall_segments.push(Wall::new(
-                    Vector2i::new(x, span.0.y),
-                    Vector2i::new(x + 1, span.0.y),
-                ));
+                span_pieces.push((Vector2i::new(x, span.0.y), Vector2i::new(x + 1, span.0.y)));
             }
         }
 
-        for wall in wall_segments {
-            self.add_wall(wall.unwrap());
-        }
+        span_pieces
+    }
+
+    fn rebuild_mesh(&mut self) {
+        let mesh = self.builder.bind().wall_data().to_mesh();
+        self.wall_preview.set_mesh(&mesh);
     }
 
     fn add_wall(&mut self, wall: Wall) {
-        self.wall_data.add_wall(wall);
+        self.builder.bind_mut().wall_data_mut().add_wall(wall);
+    }
+
+    fn remove_wall(&mut self, span: (Vector2i, Vector2i)) {
+        self.builder.bind_mut().wall_data_mut().remove_wall(span);
     }
 }

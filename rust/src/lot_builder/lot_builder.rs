@@ -1,6 +1,7 @@
-use godot::classes::CsgBox3D;
-use godot::classes::Material;
+use godot::classes::MeshInstance3D;
 use godot::prelude::*;
+
+use crate::lot_data;
 
 use super::BuilderGrid;
 use super::WallTool;
@@ -13,36 +14,22 @@ enum LotBuilderTool {
 }
 
 #[derive(Debug, GodotClass)]
-#[class(base=Node)]
+#[class(no_init, base=Node)]
 pub struct LotBuilder {
     grid: Gd<BuilderGrid>,
-
     tool: LotBuilderTool,
-
-    // Parent of temporary wall graphics
-    wall_temp_root: Gd<Node3D>,
+    wall_data: lot_data::Walls,
+    wall_mesh: Gd<MeshInstance3D>,
 
     base: Base<Node>,
 }
 
 #[godot_api]
 impl INode for LotBuilder {
-    fn init(base: Base<Self::Base>) -> Self {
-        Self {
-            grid: BuilderGrid::new_alloc(),
-
-            tool: LotBuilderTool::None,
-
-            wall_temp_root: Node3D::new_alloc(),
-
-            base,
-        }
-    }
-
     fn ready(&mut self) {
         self.setup_scene();
 
-        let wall_tool = WallTool::new_alloc();
+        let wall_tool = WallTool::new(self.to_gd());
         self.base_mut().add_child(&wall_tool);
         self.tool = LotBuilderTool::Wall(wall_tool);
     }
@@ -51,37 +38,30 @@ impl INode for LotBuilder {
 }
 
 impl LotBuilder {
+    pub fn new(wall_data: lot_data::Walls, wall_mesh: Gd<MeshInstance3D>) -> Gd<Self> {
+        Gd::from_init_fn(|base| Self {
+            grid: BuilderGrid::new_alloc(),
+            tool: LotBuilderTool::None,
+            wall_data,
+            wall_mesh,
+
+            base,
+        })
+    }
+
     fn setup_scene(&mut self) {
         let mut grid = self.grid.clone();
         grid.set_position(Vector3::UP * 0.2);
         grid.set_name("grid");
 
-        let mut wall_temp_root = self.wall_temp_root.clone();
-        wall_temp_root.set_name("wall_temp_root");
-
         self.base_mut().add_child(&grid);
-        self.base_mut().add_child(&wall_temp_root);
     }
 
-    fn add_wall(&mut self, span: (Vector2i, Vector2i)) {
-        let mut temp_wall = CsgBox3D::new_alloc();
-        let material: Gd<Material> = load("res://assets/materials/mat_wall_bare.tres");
-        temp_wall.set_material(&material);
-        self.wall_temp_root.add_child(&temp_wall);
+    pub fn wall_data(&self) -> &lot_data::Walls {
+        &self.wall_data
+    }
 
-        let relative = (span.0 - span.1).abs();
-        if relative.x > relative.y {
-            temp_wall.set_size(Vector3::new(relative.x as f32, 2.0, 0.15));
-
-            let x = span.0.x.min(span.1.x) as f32 + relative.x as f32 / 2.0;
-            let z = span.0.y.min(span.1.y) as f32;
-            temp_wall.set_position(Vector3::new(x, 1.0, z));
-        } else {
-            temp_wall.set_size(Vector3::new(0.15, 2.0, relative.y as f32));
-
-            let x = span.0.x.min(span.1.x) as f32;
-            let z = span.0.y.min(span.1.y) as f32 + relative.y as f32 / 2.0;
-            temp_wall.set_position(Vector3::new(x, 1.0, z));
-        }
+    pub fn wall_data_mut(&mut self) -> &mut lot_data::Walls {
+        &mut self.wall_data
     }
 }

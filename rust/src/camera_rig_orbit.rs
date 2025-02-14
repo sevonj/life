@@ -1,14 +1,9 @@
 //! class: [CameraRigOrbit]
 //! desc: An orbiting camera controller
 //!
-use godot::{
-    classes::{
-        input::MouseMode, node::ProcessMode, InputEvent, InputEventMouseButton,
-        InputEventMouseMotion,
-    },
-    global::{deg_to_rad, MouseButton},
-    prelude::*,
-};
+use godot::classes::{input::MouseMode, node::ProcessMode, InputEvent, InputEventMouseMotion};
+use godot::global::deg_to_rad;
+use godot::prelude::*;
 
 const MIN_DISTANCE: f32 = 5.0;
 const MAX_DISTANCE: f32 = 100.0;

@@ -3,7 +3,7 @@ use godot::classes::{CsgSphere3D, ICsgSphere3D, Material};
 use godot::obj::WithBaseField;
 use godot::prelude::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum ToolGizmoStyle {
     #[default]
     Normal,
@@ -48,11 +48,16 @@ impl ToolGizmo {
         self.base_mut().set_material(&material);
     }
 
+    pub fn style(&self) -> ToolGizmoStyle {
+        self.style
+    }
+
     pub fn set_style(&mut self, style: ToolGizmoStyle) {
         let material: Gd<Material> = match style {
             ToolGizmoStyle::Normal => load("res://assets/materials/fx/mat_fx_uvcube.tres"),
             ToolGizmoStyle::Destructive => load("res://assets/materials/fx/mat_fx_uvcube_red.tres"),
         };
         self.base_mut().set_material(&material);
+        self.style = style;
     }
 }

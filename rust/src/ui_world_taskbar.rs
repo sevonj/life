@@ -1,13 +1,12 @@
 //! Class: [UiHomeTaskbar]
 //! Desc: The large bottom bar in home view
 //!
-use godot::classes::{Control, Script};
 use godot::classes::{
-    control::LayoutPreset, HBoxContainer, IPanelContainer, PanelContainer, StyleBoxTexture,
+    control::LayoutPreset, Control, HBoxContainer, IPanelContainer, PanelContainer, Script, StyleBoxTexture
 };
 use godot::prelude::*;
 
-use crate::{Person, UiPersonBioPanel, UiPersonNeedsPanel, UiWorldModeSelectOld, World};
+use crate::{Person, UiPersonBioPanel, UiPersonNeedsPanel};
 
 const BAR_H: f32 = 32.0;
 
@@ -33,8 +32,7 @@ pub struct UiWorldTaskbar {
 #[godot_api]
 impl IPanelContainer for UiWorldTaskbar {
     fn init(base: Base<Self::Base>) -> Self {
-        let ui_world_mode_select_packed: Gd<Script> =
-            load("res://classes/ui_world_mode_select.gd");
+        //let ui_world_mode_select_packed: Gd<Script> = load("res://classes/ui_world_mode_select.gd");
         //let pp = ui_world_mode_select_packed.new_al
 
         Self {
@@ -85,10 +83,10 @@ impl UiWorldTaskbar {
         self.select_person(None);
     }
 
-    /// Signals
-    pub fn connect_world(&mut self, world: Gd<World>) {
-        //self.ui_world_mode_select.bind_mut().connect_world(world)
-    }
+    // /// Signals
+    //pub fn connect_world(&mut self, world: Gd<World>) {
+    //    //self.ui_world_mode_select.bind_mut().connect_world(world)
+    //}
 
     pub fn select_person(&mut self, person: Option<Gd<Person>>) {
         self.ui_playmode_person_bio

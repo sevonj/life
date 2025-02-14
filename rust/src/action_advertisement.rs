@@ -1,4 +1,4 @@
-use godot::{classes::Node3D, obj::Gd};
+use godot::prelude::*;
 
 use crate::Furniture;
 
