@@ -2,13 +2,16 @@
 //! Desc: World root node
 //!
 use godot::classes::{
-    control::{LayoutPreset, MouseFilter, SizeFlags}, node::ProcessMode, BoxShape3D, Control, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D, VBoxContainer
+    control::{LayoutPreset, MouseFilter, SizeFlags},
+    node::ProcessMode,
+    BoxShape3D, Control, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D, VBoxContainer,
 };
 use godot::global::MouseButton;
 use godot::prelude::*;
 
 use crate::{
-    lot_builder, ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture, LotBuilder, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode
+    lot_builder, ActionAdvertisement, ActionAdvertisementStat, CameraRigOrbit, Furniture,
+    LotBuilder, LotWalls, Person, UiWorldTaskbar, WorldEnv, WorldViewMode,
 };
 
 #[derive(Debug, GodotClass)]
@@ -50,7 +53,7 @@ impl INode for World {
             selected_person: None,
             view_mode: WorldViewMode::default(),
 
-            lot_builder: Some(LotBuilder::new_alloc()),
+            lot_builder: None,
 
             ui_root,
             ui_taskbar,
@@ -67,8 +70,8 @@ impl INode for World {
     fn ready(&mut self) {
         self.base_mut().set_process_mode(ProcessMode::ALWAYS);
 
-        let lot_builder = self.lot_builder.clone().unwrap();
-        self.base_mut().add_child(&lot_builder);
+        //let lot_builder = self.lot_builder.clone().unwrap();
+        //self.base_mut().add_child(&lot_builder);
 
         self.setup_ui();
         self.setup_scene();
@@ -79,7 +82,15 @@ impl INode for World {
     }
 
     fn process(&mut self, _delta: f64) {
-        //
+        let input = Input::singleton();
+
+        if input.is_action_just_pressed("mode_play") {
+            self.set_view_mode(WorldViewMode::Play);
+        } else if input.is_action_just_pressed("mode_buy") {
+            self.set_view_mode(WorldViewMode::Buy);
+        } else if input.is_action_just_pressed("mode_build") {
+            self.set_view_mode(WorldViewMode::Build);
+        }
     }
 
     fn unhandled_input(&mut self, event: Gd<InputEvent>) {
@@ -105,10 +116,36 @@ impl World {
 
     #[func]
     pub fn set_view_mode(&mut self, mode: WorldViewMode) {
-        if mode == WorldViewMode::Play {
-            self.base_mut().get_tree().unwrap().set_pause(false);
-        } else {
-            self.base_mut().get_tree().unwrap().set_pause(true);
+        match mode {
+            WorldViewMode::Build => {
+                self.base_mut().get_tree().unwrap().set_pause(true);
+
+                if let Some(lot_builder) = &mut self.lot_builder {
+                    godot_error!("wtf, lot builder exists already!");
+                    lot_builder.queue_free();
+                }
+                let mut lot_builder = LotBuilder::new_alloc();
+                lot_builder.set_name("lot_builder");
+
+                self.base_mut().add_child(&lot_builder);
+                self.lot_builder = Some(lot_builder);
+            }
+            WorldViewMode::Buy => {
+                self.base_mut().get_tree().unwrap().set_pause(true);
+
+                if let Some(lot_builder) = &mut self.lot_builder {
+                    lot_builder.queue_free();
+                    self.lot_builder = None;
+                }
+            }
+            WorldViewMode::Play => {
+                self.base_mut().get_tree().unwrap().set_pause(false);
+
+                if let Some(lot_builder) = &mut self.lot_builder {
+                    lot_builder.queue_free();
+                    self.lot_builder = None;
+                }
+            }
         }
         self.view_mode = mode;
     }
