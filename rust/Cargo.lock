@@ -160,6 +160,7 @@ version = "0.1.0"
 dependencies = [
  "godot",
  "rand",
+ "uuid",
 ]
 
 [[package]]
@@ -300,6 +301,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ced87ca4be083373936a67f8de945faa23b6b42384bd5b64434850802c6dccd0"
 dependencies = [
  "getrandom",
+ "rand",
 ]
 
 [[package]]

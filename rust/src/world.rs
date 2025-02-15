@@ -1,6 +1,8 @@
 //! Class: [World]
 //! Desc: World root node
 //!
+use std::collections::HashMap;
+
 use godot::classes::{
     control::{LayoutPreset, MouseFilter, SizeFlags},
     node::ProcessMode,
@@ -9,6 +11,7 @@ use godot::classes::{
 };
 use godot::global::MouseButton;
 use godot::prelude::*;
+use uuid::Uuid;
 
 use crate::{
     lot_builder::LotBuilder, lot_data, ui_debug_ovl, ActionAdvertisement, ActionAdvertisementStat,
@@ -19,7 +22,7 @@ use crate::{
 #[derive(Debug, GodotClass)]
 #[class(base=Node)]
 pub struct World {
-    people: Vec<Gd<Person>>,
+    people: HashMap<Uuid, Gd<Person>>,
     furniture: Vec<Gd<Furniture>>,
     selected_person: Option<Gd<Person>>,
     view_mode: WorldViewMode,
@@ -54,7 +57,7 @@ impl INode for World {
         let data_walls = lot_data::Walls::with_test_layout();
 
         Self {
-            people: vec![],
+            people: HashMap::new(),
             furniture: vec![],
             selected_person: None,
             view_mode: WorldViewMode::default(),
@@ -177,6 +180,10 @@ impl World {
             vec.extend(furniture.bind().available_actions().to_owned());
         }
         vec
+    }
+
+    pub fn people(&self) -> &HashMap<Uuid, Gd<Person>> {
+        &self.people
     }
 
     pub fn view_mode(&self) -> WorldViewMode {
@@ -315,6 +322,7 @@ impl World {
                         value: -2,
                     },
                 ],
+                required_people: 1,
             });
 
         let mut bed_coll_box = BoxShape3D::new_gd();
@@ -338,15 +346,16 @@ impl World {
                     key: "sleep".into(),
                     value: 10,
                 }],
+                required_people: 1,
             });
 
         let mut bed2_coll_box = BoxShape3D::new_gd();
-        bed2_coll_box.set_size(Vector3::new(0.9, 0.6, 2.0));
+        bed2_coll_box.set_size(Vector3::new(1.8, 0.6, 2.0));
         let bed2_coll_offset = bed2_coll_box.get_size() / 2.0;
         let bed2_coll_shape = bed2_coll_box.upcast::<Shape3D>();
 
         let mut bed2 = Furniture::new(
-            "res://assets/furniture/mdl_bed_1x2_001.blend",
+            "res://assets/furniture/mdl_bed_double_2x2_001.blend",
             bed2_coll_shape,
             bed2_coll_offset,
             vec![],
@@ -361,6 +370,7 @@ impl World {
                     key: "sleep".into(),
                     value: 10,
                 }],
+                required_people: 1,
             });
         let bed_ref = bed2.clone();
         bed2.bind_mut()
@@ -378,6 +388,7 @@ impl World {
                         value: 4,
                     },
                 ],
+                required_people: 2,
             });
 
         let mut toilet_coll_box = BoxShape3D::new_gd();
@@ -400,6 +411,7 @@ impl World {
                     key: "comfort".into(),
                     value: 3,
                 }],
+                required_people: 1,
             });
         let toilet_ref = toilet.clone();
         toilet
@@ -412,6 +424,7 @@ impl World {
                     key: "bladder".into(),
                     value: 10,
                 }],
+                required_people: 1,
             });
 
         let mut sink_coll_box = BoxShape3D::new_gd();
@@ -433,6 +446,7 @@ impl World {
                     key: "hygiene".into(),
                     value: 10,
                 }],
+                required_people: 1,
             });
 
         stove.set_position(Vector3::new(8.0, 0.0, 15.0));
@@ -463,9 +477,10 @@ impl World {
     pub fn add_person(&mut self, mut person: Gd<Person>) {
         person.connect("sig_selected", &self.to_gd().callable("on_person_selected"));
         person.bind_mut().world = Some(self.to_gd());
+        let uuid = person.bind().uuid();
 
         self.scn_root.add_child(&person);
-        self.people.push(person);
+        self.people.insert(uuid, person);
     }
 
     pub fn add_furniture(&mut self, furniture: Gd<Furniture>) {

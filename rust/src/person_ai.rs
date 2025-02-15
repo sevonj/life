@@ -1,12 +1,15 @@
 //! class: [PersonAi]
 //! desc: AI for [crate::Person]
 //!
-use std::collections::HashSet;
+use godot::prelude::*;
 
 use rand;
+use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
-use crate::{Action, ActionAdvertisement, PersonNeeds};
+use crate::{Action, ActionAdvertisement, Person, PersonNeeds};
 
+#[derive(Debug)]
 struct ActionTemp {
     action: Action,
     score: f64,
@@ -14,22 +17,26 @@ struct ActionTemp {
 
 #[derive(Debug)]
 pub struct PersonAi {
+    /// Brain owner's UUID
+    person_uuid: Uuid,
+
     pub last_action: String,
 }
 
-impl Default for PersonAi {
-    fn default() -> Self {
+impl PersonAi {
+    pub fn new(person_uuid: Uuid) -> Self {
         Self {
+            person_uuid,
+
             last_action: "".into(),
         }
     }
-}
 
-impl PersonAi {
     pub fn decide_action(
         &self,
         needs: &PersonNeeds,
         advertised_actions: &Vec<ActionAdvertisement>,
+        people: &HashMap<Uuid, Gd<Person>>,
         possible_actions: &Vec<String>,
     ) -> Action {
         let mut processed_actions = vec![];
@@ -41,9 +48,29 @@ impl PersonAi {
                 continue;
             }
 
+            let mut potential_company: Vec<Gd<Person>> = vec![];
+            for (uuid, person) in people {
+                if *uuid == self.person_uuid {
+                    continue;
+                }
+                potential_company.push(person.clone());
+            }
+
+            //if advert.required_people > potential_company.len() - 1 {
+            //    continue;
+            //}
+
+            let company = if advert.required_people == 2 {
+                Some(potential_company[0].bind().uuid())
+            } else {
+                None
+            };
+
             let action = Action {
                 key: advert.action_key.clone(),
-                target: Some(advert.source_node.clone()),
+                object: Some(advert.source_node.clone()),
+                partner_uuid: company,
+                primary: true,
             };
 
             let mut score = self.score_action_by_needs(needs, advert);
@@ -59,6 +86,7 @@ impl PersonAi {
 
         filter_action_dupes(&mut processed_actions);
 
+        // Todo: make this a lottery with ticket numbers adjusted by score.
         let choice = processed_actions.len()
             - 1
             - match processed_actions.len() {

@@ -11,6 +11,8 @@ pub struct ActionAdvertisement {
     pub action_key: String,
     /// What kind of needs does this action appel
     pub stats: Vec<ActionAdvertisementStat>,
+    /// How many people
+    pub required_people: usize,
 }
 
 #[derive(Debug, Clone)]

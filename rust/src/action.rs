@@ -1,18 +1,25 @@
 use godot::prelude::*;
+use uuid::Uuid;
 
-use crate::Furniture;
+use crate::{Furniture, Person};
 
 #[derive(Debug, Clone)]
 pub struct Action {
     pub key: String,
-    pub target: Option<Gd<Furniture>>,
+    pub object: Option<Gd<Furniture>>,
+    /// Pair activity partner
+    pub partner_uuid: Option<Uuid>,
+    /// (Pair activity), is this action the master, or a secondary copy.
+    pub primary: bool,
 }
 
 impl Action {
     pub fn idle() -> Self {
         Self {
             key: "idle".into(),
-            target: None,
+            object: None,
+            partner_uuid: None,
+            primary: true,
         }
     }
 
