@@ -1,7 +1,7 @@
 use godot::prelude::*;
 use uuid::Uuid;
 
-use crate::{Furniture, Person};
+use crate::Furniture;
 
 #[derive(Debug, Clone)]
 pub struct Action {
@@ -9,8 +9,8 @@ pub struct Action {
     pub object: Option<Gd<Furniture>>,
     /// Pair activity partner
     pub partner_uuid: Option<Uuid>,
-    /// (Pair activity), is this action the master, or a secondary copy.
-    pub primary: bool,
+    /// (Pair activity), Master copy of the task is
+    pub master_uuid: Option<Uuid>,
 }
 
 impl Action {
@@ -19,8 +19,12 @@ impl Action {
             key: "idle".into(),
             object: None,
             partner_uuid: None,
-            primary: true,
+            master_uuid: None,
         }
+    }
+
+    pub fn is_primary(&self) -> bool {
+        self.master_uuid.is_none()
     }
 
     pub fn to_present_tense(&self) -> String {

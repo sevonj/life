@@ -1,12 +1,14 @@
 //! Class: [UiPersonBioPanel]
 //! Desc: A large panel that shows a person's info.
 //!
-use godot::{
-    classes::{text_server::AutowrapMode, IMarginContainer, Label, MarginContainer, VBoxContainer},
-    prelude::*,
+
+use godot::prelude::*;
+
+use godot::classes::{
+    text_server::AutowrapMode, IMarginContainer, Label, MarginContainer, VBoxContainer,
 };
 
-use crate::{Task, Person};
+use crate::{person::TaskState, Person};
 
 const MIN_W: f32 = 128.0;
 
@@ -75,14 +77,17 @@ impl UiPersonBioPanel {
         self.lab_person_name
             .set_text(&target.base().get_name().to_string());
 
-        let task_text = match &target.task() {
-            Task::Moving { queued_action, .. } => {
-                format!("Preparing to\n'{}'", queued_action.key)
-            }
-            Task::Performing { action, .. } => action.to_present_tense(),
+        let task_desc = target.task().action().to_present_tense();
+        let status_desc = match target.task().state() {
+            TaskState::Init => "just started",
+            TaskState::Moving => "moving to location",
+            TaskState::Waiting => "waiting for partner",
+            TaskState::InProgress => "in progress",
+            TaskState::Done => "done",
         };
 
-        self.lab_person_task.set_text(task_text.as_str());
+        self.lab_person_task
+            .set_text(format!("{task_desc} ({status_desc})").as_str());
     }
 
     fn show_placeholder(&mut self) {

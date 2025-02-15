@@ -8,20 +8,57 @@ use uuid::Uuid;
 
 use crate::{action, Action, EntityCollider, PersonAi, PersonNeeds, World};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskState {
+    Init,
+    Moving,
+    Waiting,
+    InProgress,
+    Done,
+}
+
 #[derive(Debug)]
-pub enum Task {
-    /// Moving to the next action
-    Moving {
-        queued_action: Action,
-        target_position: Vector3,
-    },
-    /// Performing an action. Time left is in seconds.
-    Performing { action: Action, time_left: f64 },
+pub struct Task {
+    uuid: Uuid,
+    state: TaskState,
+    action: Action,
+    target_position: Option<Vector3>,
+    time_left: f64,
+}
+
+impl Task {
+    pub fn new(action: Action) -> Self {
+        let target_position = action.object.as_ref().map(|f| f.get_global_position());
+        let uuid = action.master_uuid.unwrap_or(Uuid::new_v4());
+
+        Self {
+            uuid,
+            state: TaskState::Init,
+            action,
+            target_position,
+            time_left: 2.0,
+        }
+    }
+    pub fn uuid(&self) -> Uuid {
+        self.uuid
+    }
+
+    pub fn action(&self) -> &Action {
+        &self.action
+    }
+
+    pub fn state(&self) -> TaskState {
+        self.state
+    }
+
+    pub fn time_left(&self) -> f64 {
+        self.time_left
+    }
 }
 
 /// A real human bean
 #[derive(Debug, GodotClass)]
-#[class(base=Node3D)]
+#[class(no_init, base=Node3D)]
 pub struct Person {
     uuid: Uuid,
 
@@ -29,10 +66,9 @@ pub struct Person {
     brain: PersonAi,
     possible_actions: Vec<String>,
     task: Task,
-    task_done: bool,
     action_queue: VecDeque<Action>,
 
-    pub world: Option<Gd<World>>,
+    world: Gd<World>,
 
     node_visuals: Gd<Node3D>,
     node_collider: Gd<EntityCollider>,
@@ -42,39 +78,6 @@ pub struct Person {
 
 #[godot_api]
 impl INode3D for Person {
-    fn init(base: Base<Self::Base>) -> Self {
-        let uuid = Uuid::new_v4();
-
-        Self {
-            uuid,
-
-            needs: PersonNeeds::default(),
-            brain: PersonAi::new(uuid),
-            possible_actions: vec![
-                "make_food".into(),
-                "toilet".into(),
-                "sit".into(),
-                "sleep".into(),
-                "do_the_mario".into(),
-                "wash_hands".into(),
-                "idle".into(),
-            ],
-            task: Task::Performing {
-                action: Action::idle(),
-                time_left: 1.0,
-            },
-            task_done: false,
-            action_queue: VecDeque::new(),
-
-            world: None,
-
-            node_visuals: Node3D::new_alloc(),
-            node_collider: EntityCollider::new_alloc(),
-
-            base,
-        }
-    }
-
     fn ready(&mut self) {
         self.setup_visuals();
         self.setup_collider();
@@ -86,153 +89,121 @@ impl INode3D for Person {
         let mut position = self.base_mut().get_position();
         let mut this_gd = self.to_gd();
 
-        if self.task_done{
-            self.start_new_task();
-        }
+        match self.task.state {
+            TaskState::Init => {
+                self.task.state = TaskState::Moving;
+            }
 
-        match &mut self.task {
-            Task::Moving {
-                queued_action,
-                target_position,
-            } => {
-                let real_target_position = match queued_action.primary {
-                    true => *target_position,
-                    false => *target_position + Vector3::RIGHT,
+            TaskState::Moving => {
+                let Some(mut target_position) = self.task.target_position else {
+                    self.task.state = TaskState::Waiting;
+                    return;
                 };
 
-                if position.distance_to(real_target_position) <= 0.5 {
-                    this_gd.set_position(real_target_position);
+                if !self.task.action.is_primary() {
+                    target_position += Vector3::RIGHT;
+                }
 
-                    match queued_action.key.as_str() {
-                        "sleep" => {
-                            let sleep_particles_packed: Gd<PackedScene> =
-                                load("res://assets/prefabs/vfx_particle_zzz.tscn");
-                            let sleep_particles = sleep_particles_packed.instantiate().unwrap();
-                            this_gd.add_child(&sleep_particles);
-                            this_gd
-                                .connect("sig_task_ended", &sleep_particles.callable("queue_free"));
-                        }
-                        "do_the_mario" => {
-                            let Some(partner_uuid) = &queued_action.partner_uuid else {
-                                godot_error!("you can't do the mario without the luigi!");
-                                self.end_task();
-                                return;
-                            };
-                            let world = self.world.as_ref().unwrap().bind();
-                            if let Some(partner) = world.people().get(&partner_uuid).clone() {
-                                match partner.bind().task() {
-                                    Task::Moving { queued_action, .. } => {
-                                        if queued_action.key != "do_the_mario" {
-                                            return;
-                                        }
-                                        if queued_action.partner_uuid != Some(self.uuid) {
-                                            return;
-                                        };
-                                    }
-                                    Task::Performing { action, .. } => {
-                                        if action.key == "do_the_mario" {
-                                            let love_particles_packed: Gd<PackedScene> = load(
-                                                "res://assets/prefabs/vfx_particle_hearts.tscn",
-                                            );
-                                            let love_particles =
-                                                love_particles_packed.instantiate().unwrap();
-                                            this_gd.add_child(&love_particles);
-                                            this_gd.connect(
-                                                "sig_task_ended",
-                                                &love_particles.callable("queue_free"),
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _ => (),
-                    }
-
-                    self.task = Task::Performing {
-                        action: queued_action.to_owned(),
-                        time_left: 10.0,
-                    };
-
+                if position.distance_to(target_position) <= 0.5 {
+                    this_gd.set_position(target_position);
+                    self.task.state = TaskState::Waiting;
                     return;
                 }
 
-                let dir = (real_target_position - position).normalized();
+                let dir = (target_position - position).normalized();
                 position += dir * 1.0 * delta as f32;
-                self.node_visuals.look_at(real_target_position);
+                self.node_visuals.look_at(target_position);
                 self.base_mut().set_position(position);
             }
-            Task::Performing { action, time_left } => {
-                match action.key.as_str() {
+
+            TaskState::Waiting => match self.task.action.partner_uuid {
+                Some(partner_uuid) => {
+                    let world = self.world.bind();
+                    if let Some(partner) = world.get_person(&partner_uuid) {
+                        if partner.bind().task.action.master_uuid != Some(self.task.uuid) {
+                            return;
+                        }
+                        match partner.bind().task.state {
+                            TaskState::Init | TaskState::Moving => return,
+                            TaskState::Waiting | TaskState::InProgress => {
+                                self.task.state = TaskState::InProgress;
+
+                                match self.task.action.key.as_str() {
+                                    "sleep" => {
+                                        let particles_packed: Gd<PackedScene> =
+                                            load("res://assets/prefabs/vfx_particle_zzz.tscn");
+                                        let particles = particles_packed.instantiate().unwrap();
+                                        this_gd.add_child(&particles);
+                                        this_gd.connect(
+                                            "sig_task_ended",
+                                            &particles.callable("queue_free"),
+                                        );
+                                    }
+                                    "do_the_mario" => {
+                                        let particles_packed: Gd<PackedScene> =
+                                            load("res://assets/prefabs/vfx_particle_hearts.tscn");
+                                        let particles = particles_packed.instantiate().unwrap();
+                                        this_gd.add_child(&particles);
+                                        this_gd.connect(
+                                            "sig_task_ended",
+                                            &particles.callable("queue_free"),
+                                        );
+                                    }
+                                    _ => (),
+                                }
+                            }
+                            TaskState::Done => panic!("wtf, partner ended task before I began?"),
+                        }
+                    }
+                }
+                None => self.task.state = TaskState::InProgress,
+            },
+            TaskState::InProgress => {
+                self.task.time_left -= delta;
+
+                match self.task.action.key.as_str() {
                     "make_food" => {
-                        *time_left -= delta;
                         self.needs.hunger += 0.2 * delta;
                     }
                     "toilet" => {
-                        *time_left -= delta;
                         self.needs.bladder += 0.2 * delta;
                     }
                     "sit" => {
-                        *time_left -= delta;
                         self.needs.comfort += 0.2 * delta;
                     }
                     "sleep" => {
-                        *time_left -= delta;
                         self.needs.sleep += 0.2 * delta;
                         self.needs.comfort += 0.2 * delta;
                     }
                     "do_the_mario" => {
-                        let Some(partner_uuid) = &action.partner_uuid else {
-                            godot_error!("you can't do the mario without the luigi!");
-                            self.end_task();
-                            return;
-                        };
-                        let world = self.world.as_ref().unwrap().bind();
-                        let partner = world.people().get(partner_uuid).unwrap();
-                        match partner.bind().task() {
-                            Task::Performing { action, .. } => {
-                                if action.key != "do_the_mario" {
-                                    return;
-                                }
-                                if action.partner_uuid != Some(self.uuid) {
-                                    return;
-                                };
-                            }
-                            _ => return,
-                        }
-                        *time_left -= delta;
                         self.needs.fun += 0.2 * delta;
                         self.needs.social += 0.2 * delta;
                         self.needs.comfort += 0.2 * delta;
                         self.needs.hygiene -= 0.1 * delta;
                     }
                     "wash_hands" => {
-                        *time_left -= delta;
                         self.needs.hygiene += 0.2 * delta;
                     }
-                    "idle" => {
-                        *time_left -= delta;
-                    }
+                    "idle" => {}
                     _ => panic!("unpossible!"),
                 }
 
-                if *time_left <= 0.0 {
-                    // Clean up old action
-                    let old_action = match &mut self.task {
-                        Task::Moving { queued_action, .. } => queued_action,
-                        Task::Performing { action, .. } => action,
-                    };
-                    if let Some(old_target) = &mut old_action.object {
-                        old_target.bind_mut().unreserve();
-                    }
-                    if let Some(partner_uuid) = old_action.partner_uuid {
-                        let world = self.world.as_ref().unwrap().bind();
-                        let mut partner = world.people().get(&partner_uuid).unwrap().clone();
-                        partner.bind_mut().end_task();
-                    }
-
+                if self.task.time_left <= 0.0 {
                     self.end_task();
                 }
+            }
+            TaskState::Done => {
+                // Clean up old task
+                let old_action = &mut self.task.action;
+                if let Some(old_target) = &mut old_action.object {
+                    old_target.bind_mut().unreserve();
+                }
+                if let Some(partner_uuid) = old_action.partner_uuid {
+                    let mut partner = self.world.bind().get_person(&partner_uuid).unwrap().clone();
+                    partner.bind_mut().end_task_uuid(self.task.uuid);
+                }
+
+                self.start_new_task();
             }
         }
     }
@@ -256,6 +227,35 @@ impl Person {
 }
 
 impl Person {
+    pub fn new(world: Gd<World>) -> Gd<Self> {
+        let uuid = Uuid::new_v4();
+
+        Gd::from_init_fn(|base| Self {
+            uuid,
+
+            needs: PersonNeeds::default(),
+            brain: PersonAi::new(uuid),
+            possible_actions: vec![
+                "make_food".into(),
+                "toilet".into(),
+                "sit".into(),
+                "sleep".into(),
+                "do_the_mario".into(),
+                "wash_hands".into(),
+                "idle".into(),
+            ],
+            task: Task::new(Action::idle()),
+            action_queue: VecDeque::new(),
+
+            world,
+
+            node_visuals: Node3D::new_alloc(),
+            node_collider: EntityCollider::new_alloc(),
+
+            base,
+        })
+    }
+
     pub fn uuid(&self) -> Uuid {
         self.uuid
     }
@@ -296,8 +296,14 @@ impl Person {
         self.action_queue.push_back(action);
     }
 
-    pub fn end_task(&mut self) {
-        self.task_done = true;
+    fn end_task(&mut self) {
+        self.task.state = TaskState::Done;
+    }
+
+    pub fn end_task_uuid(&mut self, uuid: Uuid) {
+        if self.task.uuid == uuid {
+            self.task.state = TaskState::Done;
+        }
     }
 
     fn start_new_task(&mut self) {
@@ -306,55 +312,38 @@ impl Person {
         self.base_mut().emit_signal("sig_task_ended", &[]);
         self.task = self.find_new_task();
 
-        // Setup new action
-        let action = match &mut self.task {
-            Task::Moving { queued_action, .. } => queued_action,
-            Task::Performing { action, .. } => action,
-        };
-        self.brain.last_action = action.key.clone();
-        if let Some(target) = &mut action.object {
+        self.brain.last_action = self.task.action.key.clone();
+        if let Some(target) = &mut self.task.action.object {
             target.bind_mut().reserve(this_gd.clone());
         }
-        self.task_done = false;
     }
 
     fn find_new_task(&mut self) -> Task {
-        let Some(world) = &self.world else {
-            panic!("No world!");
-        };
-
-        let world = world.clone();
-
         let action = match self.action_queue.pop_front() {
             Some(action) => action,
             None => self.brain.decide_action(
                 &self.needs,
-                &world.bind().advertisements(),
-                &world.bind().people(),
+                &self.world.bind().advertisements(),
+                &self.world.bind().people(),
                 &self.possible_actions,
             ),
         };
 
-        let target_position = match &action.object {
-            Some(target) => target.get_position(),
-            None => self.base().get_position(),
-        };
+        let task = Task::new(action);
 
-        if action.primary {
-            if let Some(partner_uuid) = action.partner_uuid.clone() {
-                let mut secondary_action = action.clone();
+        // Send a secondary copy to partner of group activity.
+        if task.action.is_primary() {
+            if let Some(partner_uuid) = task.action.partner_uuid.clone() {
+                let mut secondary_action = task.action.clone();
 
-                let world = self.world.as_ref().unwrap().bind();
-                let mut partner = world.people().get(&partner_uuid).unwrap().clone();
+                let mut partner = self.world.bind().get_person(&partner_uuid).unwrap().clone();
                 secondary_action.partner_uuid = Some(self.uuid);
-                secondary_action.primary = false;
+                secondary_action.master_uuid = Some(task.uuid());
+
                 partner.bind_mut().queue_action(secondary_action);
             }
         }
 
-        Task::Moving {
-            queued_action: action,
-            target_position,
-        }
+        task
     }
 }

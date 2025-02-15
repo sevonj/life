@@ -14,7 +14,7 @@ use godot::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    lot_builder::LotBuilder, lot_data, ui_debug_ovl, ActionAdvertisement, ActionAdvertisementStat,
+    lot_builder::LotBuilder, lot_data, ActionAdvertisement, ActionAdvertisementStat,
     CameraRigOrbit, Furniture, Person, SpiritLevel, UiDebugOvl, UiWorldTaskbar, WorldEnv,
     WorldViewMode,
 };
@@ -180,6 +180,10 @@ impl World {
             vec.extend(furniture.bind().available_actions().to_owned());
         }
         vec
+    }
+
+    pub fn get_person(&self, uuid: &Uuid) -> Option<&Gd<Person>> {
+        self.people.get(uuid)
     }
 
     pub fn people(&self) -> &HashMap<Uuid, Gd<Person>> {
@@ -462,11 +466,11 @@ impl World {
     }
 
     fn setup_people(&mut self) {
-        let mut alice = Person::new_alloc();
+        let mut alice = Person::new(self.to_gd());
         alice.set_position(Vector3::new(5.0, 0.0, 10.0));
         alice.set_name("alice");
 
-        let mut bob = Person::new_alloc();
+        let mut bob = Person::new(self.to_gd());
         bob.set_position(Vector3::new(7.0, 0.0, 7.0));
         bob.set_name("bob");
 
@@ -476,7 +480,6 @@ impl World {
 
     pub fn add_person(&mut self, mut person: Gd<Person>) {
         person.connect("sig_selected", &self.to_gd().callable("on_person_selected"));
-        person.bind_mut().world = Some(self.to_gd());
         let uuid = person.bind().uuid();
 
         self.scn_root.add_child(&person);

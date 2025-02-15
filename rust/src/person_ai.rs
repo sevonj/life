@@ -70,7 +70,7 @@ impl PersonAi {
                 key: advert.action_key.clone(),
                 object: Some(advert.source_node.clone()),
                 partner_uuid: company,
-                primary: true,
+                master_uuid: None,
             };
 
             let mut score = self.score_action_by_needs(needs, advert);
