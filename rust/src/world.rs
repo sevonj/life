@@ -4,14 +4,16 @@
 use godot::classes::{
     control::{LayoutPreset, MouseFilter, SizeFlags},
     node::ProcessMode,
-    BoxShape3D, Control, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D, VBoxContainer,
+    BoxShape3D, Control, HBoxContainer, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D,
+    VBoxContainer,
 };
 use godot::global::MouseButton;
 use godot::prelude::*;
 
 use crate::{
-    lot_builder::LotBuilder, lot_data, ActionAdvertisement, ActionAdvertisementStat,
-    CameraRigOrbit, Furniture, Person, UiWorldTaskbar, WorldEnv, WorldViewMode,
+    lot_builder::LotBuilder, lot_data, ui_debug_ovl, ActionAdvertisement, ActionAdvertisementStat,
+    CameraRigOrbit, Furniture, Person, SpiritLevel, UiDebugOvl, UiWorldTaskbar, WorldEnv,
+    WorldViewMode,
 };
 
 #[derive(Debug, GodotClass)]
@@ -26,6 +28,7 @@ pub struct World {
 
     ui_root: Gd<VBoxContainer>,
     ui_taskbar: Gd<UiWorldTaskbar>,
+    spirit_level: Gd<SpiritLevel>,
 
     scn_root: Gd<Node3D>,
     scn_env: Gd<WorldEnv>,
@@ -60,6 +63,7 @@ impl INode for World {
 
             ui_root,
             ui_taskbar,
+            spirit_level: SpiritLevel::new_alloc(),
 
             scn_root,
             scn_camera_rig,
@@ -188,8 +192,6 @@ impl World {
 
         self.ui_taskbar
             .set_anchors_preset(LayoutPreset::BOTTOM_LEFT);
-        // let this_gd = self.to_gd();
-        // self.ui_taskbar.bind_mut().connect_world(this_gd);
         self.ui_taskbar.set_name("ui_taskbar");
 
         let mut ui_root = self.ui_root.clone();
@@ -199,7 +201,57 @@ impl World {
         ui_root.set_process_mode(ProcessMode::ALWAYS);
         ui_root.set_name("ui_root");
 
+        let mut ui_controls_mode = UiDebugOvl::new_alloc();
+        ui_controls_mode.bind_mut().set_title("Modes");
+        ui_controls_mode
+            .bind_mut()
+            .add_key("F1".into(), "Play mode");
+        ui_controls_mode.bind_mut().add_key("F2".into(), "Buy mode");
+        ui_controls_mode
+            .bind_mut()
+            .add_key("F3".into(), "Build mode");
+        ui_controls_mode.set_name("ui_debug_ovl");
+
+        let mut ui_controls_cam = UiDebugOvl::new_alloc();
+        ui_controls_cam.bind_mut().set_title("Camera controls");
+        ui_controls_cam
+            .bind_mut()
+            .add_key("MMB | ctlr+RMB".into(), "Rotate");
+        ui_controls_cam
+            .bind_mut()
+            .add_key("WASD | arrows".into(), "Move");
+        ui_controls_cam
+            .bind_mut()
+            .add_key("scroll | Z/X".into(), "Zoom");
+        ui_controls_cam.set_name("ui_controls_cam");
+
+        let mut ui_controls_play = UiDebugOvl::new_alloc();
+        ui_controls_play.bind_mut().set_title("Play mode");
+        ui_controls_play
+            .bind_mut()
+            .add_key("LMB".into(), "Select character");
+        ui_controls_play.set_name("ui_controls_play");
+
+        let mut ui_controls_build = UiDebugOvl::new_alloc();
+        ui_controls_build.bind_mut().set_title("Build mode");
+        ui_controls_build
+            .bind_mut()
+            .add_key("LMB".into(), "Build wall");
+        ui_controls_build
+            .bind_mut()
+            .add_key("ctrl+LMB".into(), "Remove wall");
+        ui_controls_build.set_name("ui_controls_cam");
+
+        let mut ui_debug_root = HBoxContainer::new_alloc();
+        ui_debug_root.add_child(&ui_controls_mode);
+        ui_debug_root.add_child(&ui_controls_cam);
+        ui_debug_root.add_child(&ui_controls_play);
+        ui_debug_root.add_child(&ui_controls_build);
+        ui_debug_root.set_process_mode(ProcessMode::ALWAYS);
+        ui_debug_root.set_name("ui_debug_root");
+
         self.base_mut().add_child(&ui_root);
+        self.base_mut().add_child(&ui_debug_root);
 
         // Initialize with none state
         self.select_person(None);
@@ -217,11 +269,15 @@ impl World {
         let mut scn_lot_walls = self.scn_lot_walls.clone();
         scn_lot_walls.set_name("lot_walls");
 
+        let mut spirit_level = self.spirit_level.clone();
+        spirit_level.set_name("spirit_level");
+
         let mut scn_root = self.scn_root.clone();
         scn_root.add_child(&self.scn_camera_rig);
         scn_root.add_child(&self.scn_env);
         scn_root.add_child(&terrain);
         scn_root.add_child(&scn_lot_walls);
+        scn_root.add_child(&spirit_level);
         scn_root.set_process_mode(ProcessMode::PAUSABLE);
         scn_root.set_name("scn_root");
 
@@ -422,6 +478,7 @@ impl World {
     pub fn select_person(&mut self, person: Option<Gd<Person>>) {
         self.selected_person = person.clone();
         self.ui_taskbar.bind_mut().select_person(person);
+        self.spirit_level.bind_mut().target = self.selected_person.clone();
     }
 
     fn rebuild_building_mesh(&mut self) {
