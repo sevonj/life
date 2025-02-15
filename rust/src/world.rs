@@ -6,18 +6,35 @@ use std::collections::HashMap;
 use godot::classes::{
     control::{LayoutPreset, MouseFilter, SizeFlags},
     node::ProcessMode,
-    BoxShape3D, Control, HBoxContainer, InputEvent, InputEventMouseButton, MeshInstance3D, Shape3D,
-    VBoxContainer,
+    BoxShape3D, Control, Engine, HBoxContainer, InputEvent, InputEventMouseButton, MeshInstance3D,
+    Shape3D, VBoxContainer,
 };
 use godot::global::MouseButton;
 use godot::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    lot_builder::LotBuilder, lot_data, ActionAdvertisement, ActionAdvertisementStat,
+    lot_builder::LotBuilder, lot_data, person, ActionAdvertisement, ActionAdvertisementStat,
     CameraRigOrbit, Furniture, Person, SpiritLevel, UiDebugOvl, UiWorldTaskbar, WorldEnv,
     WorldViewMode,
 };
+
+#[derive(Debug)]
+pub enum TimeScale {
+    Regular,
+    Fast,
+    Superfast,
+}
+
+impl TimeScale {
+    pub fn to_engine_time(&self) -> f64 {
+        match self {
+            TimeScale::Regular => 1.0,
+            TimeScale::Fast => 3.0,
+            TimeScale::Superfast => 6.0,
+        }
+    }
+}
 
 #[derive(Debug, GodotClass)]
 #[class(base=Node)]
@@ -26,6 +43,7 @@ pub struct World {
     furniture: Vec<Gd<Furniture>>,
     selected_person: Option<Gd<Person>>,
     view_mode: WorldViewMode,
+    time_scale: TimeScale,
 
     lot_builder: Option<Gd<LotBuilder>>,
 
@@ -61,6 +79,7 @@ impl INode for World {
             furniture: vec![],
             selected_person: None,
             view_mode: WorldViewMode::default(),
+            time_scale: TimeScale::Regular,
 
             lot_builder: None,
 
@@ -102,6 +121,25 @@ impl INode for World {
         } else if input.is_action_just_pressed("mode_build") {
             self.set_view_mode(WorldViewMode::Build);
             self.scn_lot_walls.hide();
+        }
+
+        match self.view_mode {
+            WorldViewMode::Play => {
+                if input.is_action_just_pressed("play_toggle_pause") {
+                    let paused = self.base().get_tree().unwrap().is_paused();
+                    self.base_mut().get_tree().unwrap().set_pause(!paused);
+                } else if input.is_action_just_pressed("play_set_speed_1") {
+                    self.set_time_scale(TimeScale::Regular);
+                } else if input.is_action_just_pressed("play_set_speed_2") {
+                    self.set_time_scale(TimeScale::Fast);
+                } else if input.is_action_just_pressed("play_set_speed_3") {
+                    self.set_time_scale(TimeScale::Superfast);
+                } else if input.is_action_just_pressed("play_cycle_characters") {
+                    self.select_next_person();
+                }
+            }
+            WorldViewMode::Buy => (),
+            WorldViewMode::Build => (),
         }
     }
 
@@ -212,52 +250,53 @@ impl World {
         ui_root.set_process_mode(ProcessMode::ALWAYS);
         ui_root.set_name("ui_root");
 
-        let mut ui_controls_mode = UiDebugOvl::new_alloc();
-        ui_controls_mode.bind_mut().set_title("Modes");
-        ui_controls_mode
-            .bind_mut()
-            .add_key("F1".into(), "Play mode");
-        ui_controls_mode.bind_mut().add_key("F2".into(), "Buy mode");
-        ui_controls_mode
-            .bind_mut()
-            .add_key("F3".into(), "Build mode");
-        ui_controls_mode.set_name("ui_debug_ovl");
+        let mut ui_modehelp = UiDebugOvl::new_alloc();
+        ui_modehelp.bind_mut().set_title("Modes");
+        ui_modehelp.bind_mut().add_key("F1".into(), "Play mode");
+        ui_modehelp.bind_mut().add_key("F2".into(), "Buy mode");
+        ui_modehelp.bind_mut().add_key("F3".into(), "Build mode");
+        ui_modehelp.set_name("ui_debug_ovl");
 
-        let mut ui_controls_cam = UiDebugOvl::new_alloc();
-        ui_controls_cam.bind_mut().set_title("Camera controls");
-        ui_controls_cam
+        let mut ui_camhelp = UiDebugOvl::new_alloc();
+        ui_camhelp.bind_mut().set_title("Camera controls");
+        ui_camhelp
             .bind_mut()
             .add_key("MMB | ctlr+RMB".into(), "Rotate");
-        ui_controls_cam
+        ui_camhelp
             .bind_mut()
             .add_key("WASD | arrows".into(), "Move");
-        ui_controls_cam
-            .bind_mut()
-            .add_key("scroll | Z/X".into(), "Zoom");
-        ui_controls_cam.set_name("ui_controls_cam");
+        ui_camhelp.bind_mut().add_key("scroll | Z/X".into(), "Zoom");
+        ui_camhelp.set_name("ui_controls_cam");
 
-        let mut ui_controls_play = UiDebugOvl::new_alloc();
-        ui_controls_play.bind_mut().set_title("Play mode");
-        ui_controls_play
+        let mut ui_playhelp = UiDebugOvl::new_alloc();
+        ui_playhelp.bind_mut().set_title("Play mode");
+        ui_playhelp
             .bind_mut()
             .add_key("LMB".into(), "Select character");
-        ui_controls_play.set_name("ui_controls_play");
-
-        let mut ui_controls_build = UiDebugOvl::new_alloc();
-        ui_controls_build.bind_mut().set_title("Build mode");
-        ui_controls_build
+        ui_playhelp
             .bind_mut()
-            .add_key("LMB".into(), "Build wall");
-        ui_controls_build
+            .add_key("TAB".into(), "Cycle characters");
+        ui_playhelp
+            .bind_mut()
+            .add_key("1/2/3".into(), "Regular/Fast/Superfast times");
+        ui_playhelp
+            .bind_mut()
+            .add_key("space".into(), "Toggle pause");
+        ui_playhelp.set_name("ui_controls_play");
+
+        let mut ui_buildhelp = UiDebugOvl::new_alloc();
+        ui_buildhelp.bind_mut().set_title("Build mode");
+        ui_buildhelp.bind_mut().add_key("LMB".into(), "Build wall");
+        ui_buildhelp
             .bind_mut()
             .add_key("ctrl+LMB".into(), "Remove wall");
-        ui_controls_build.set_name("ui_controls_cam");
+        ui_buildhelp.set_name("ui_controls_cam");
 
         let mut ui_debug_root = HBoxContainer::new_alloc();
-        ui_debug_root.add_child(&ui_controls_mode);
-        ui_debug_root.add_child(&ui_controls_cam);
-        ui_debug_root.add_child(&ui_controls_play);
-        ui_debug_root.add_child(&ui_controls_build);
+        ui_debug_root.add_child(&ui_modehelp);
+        ui_debug_root.add_child(&ui_camhelp);
+        ui_debug_root.add_child(&ui_playhelp);
+        ui_debug_root.add_child(&ui_buildhelp);
         ui_debug_root.set_process_mode(ProcessMode::ALWAYS);
         ui_debug_root.set_name("ui_debug_root");
 
@@ -499,8 +538,40 @@ impl World {
         self.spirit_level.bind_mut().target = self.selected_person.clone();
     }
 
+    pub fn select_next_person(&mut self) {
+        let Some(current) = self.selected_person.as_ref().map(|p| p.bind().uuid()) else {
+            for person in self.people.values() {
+                self.select_person(Some(person.clone()));
+                return;
+            }
+            return;
+        };
+        let mut prev = Uuid::nil();
+        for person in self.people.values() {
+            if prev == current {
+                self.select_person(Some(person.clone()));
+                return;
+            }
+            prev = person.bind().uuid()
+        }
+        for person in self.people.values() {
+            if prev == current {
+                self.select_person(Some(person.clone()));
+                return;
+            }
+            prev = person.bind().uuid()
+        }
+    }
+
     fn rebuild_building_mesh(&mut self) {
         let mesh = self.data_walls.to_mesh();
         self.scn_lot_walls.set_mesh(&mesh);
+    }
+
+    fn set_time_scale(&mut self, time_scale: TimeScale) {
+        self.base_mut().get_tree().unwrap().set_pause(false);
+        Engine::singleton().set_time_scale(time_scale.to_engine_time());
+
+        self.time_scale = time_scale
     }
 }

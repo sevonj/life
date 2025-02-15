@@ -1,6 +1,7 @@
 //! class: [CameraRigOrbit]
 //! desc: An orbiting camera controller
 //!
+use godot::classes::Engine;
 use godot::classes::{input::MouseMode, node::ProcessMode, InputEvent, InputEventMouseMotion};
 use godot::global::deg_to_rad;
 use godot::prelude::*;
@@ -46,6 +47,8 @@ impl INode3D for CameraRigOrbit {
     }
 
     fn process(&mut self, delta: f64) {
+        let delta = delta / Engine::singleton().get_time_scale();
+
         self.process_input(delta);
 
         self.camera.set_position(Vector3::BACK * self.distance);
