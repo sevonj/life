@@ -37,7 +37,9 @@ impl INode3D for SpiritLevel {
     }
 
     fn process(&mut self, _delta: f64) {
-        if let Some(target) = &self.target {
+        if let Some(target) = self.target.clone() {
+            self.base_mut().show();
+
             let position = target.get_global_position() + Vector3::UP * Y_OFFSET;
             let mood = target.bind().needs().sleep() as f32;
 
@@ -46,6 +48,8 @@ impl INode3D for SpiritLevel {
             self.vial_contents
                 .set_position(Vector3::DOWN * ((1.0 - mood) * VIAL_H / 2.0));
             self.vial_contents.set_height((1.0 - mood) * VIAL_H);
+        } else{
+            self.base_mut().hide();
         }
     }
 }
