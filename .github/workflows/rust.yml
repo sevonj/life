@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  static-checks:
+  
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Format check
+      working-directory: ./project
+      run: cargo fmt -v --check
+      
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run tests
+      working-directory: ./project
+      run: cargo test --verbose
+      
+    - name: Clippy
+      working-directory: ./project
+      run: cargo clippy --no-deps --  --deny warnings
