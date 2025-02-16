@@ -1,7 +1,9 @@
 //! Class: [World]
 //! Desc: World root node
 //!
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
+
+use godot::prelude::*;
 
 use godot::classes::{
     control::{LayoutPreset, MouseFilter, SizeFlags},
@@ -10,31 +12,13 @@ use godot::classes::{
     Shape3D, VBoxContainer,
 };
 use godot::global::MouseButton;
-use godot::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    lot_builder::LotBuilder, lot_data, person, ActionAdvertisement, ActionAdvertisementStat,
-    CameraRigOrbit, Furniture, Person, SpiritLevel, UiDebugOvl, UiWorldTaskbar, WorldEnv,
-    WorldViewMode,
+    lot_builder::LotBuilder, lot_data, ActionAdvertisement, ActionAdvertisementStat,
+    CameraRigOrbit, Furniture, Person, SpiritLevel, TimeScale, UiDebugOvl, UiWorldTaskbar,
+    WorldEnv, WorldViewMode,
 };
-
-#[derive(Debug)]
-pub enum TimeScale {
-    Regular,
-    Fast,
-    Superfast,
-}
-
-impl TimeScale {
-    pub fn to_engine_time(&self) -> f64 {
-        match self {
-            TimeScale::Regular => 1.0,
-            TimeScale::Fast => 3.0,
-            TimeScale::Superfast => 6.0,
-        }
-    }
-}
 
 #[derive(Debug, GodotClass)]
 #[class(base=Node)]
@@ -44,6 +28,7 @@ pub struct World {
     selected_person: Option<Gd<Person>>,
     view_mode: WorldViewMode,
     time_scale: TimeScale,
+    time_of_day: Duration,
 
     lot_builder: Option<Gd<LotBuilder>>,
 
@@ -80,6 +65,7 @@ impl INode for World {
             selected_person: None,
             view_mode: WorldViewMode::default(),
             time_scale: TimeScale::Regular,
+            time_of_day: Duration::from_secs(360 * 10),
 
             lot_builder: None,
 
@@ -109,7 +95,17 @@ impl INode for World {
         self.base_mut().print_tree_pretty();
     }
 
-    fn process(&mut self, _delta: f64) {
+    fn process(&mut self, delta: f64) {
+        if !self.base().get_tree().unwrap().is_paused() {
+            // 1 sec realtime => 1 min game time
+            self.time_of_day += Duration::from_secs_f64(delta * 60.0);
+        }
+        const DAY_DURATION: Duration = Duration::from_secs(60 * 60 * 24);
+        if self.time_of_day >= DAY_DURATION {
+            self.time_of_day -= DAY_DURATION;
+        }
+        self.scn_env.bind_mut().set_time(self.time_of_day);
+
         let input = Input::singleton();
 
         if input.is_action_just_pressed("mode_play") {

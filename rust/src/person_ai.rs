@@ -15,6 +15,29 @@ struct ActionTemp {
     score: f64,
 }
 
+impl PartialEq for ActionTemp {
+    fn eq(&self, other: &Self) -> bool {
+        self.score == other.score
+    }
+}
+
+impl Eq for ActionTemp {}
+
+impl PartialOrd for ActionTemp {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.score.partial_cmp(&other.score)
+    }
+}
+
+impl Ord for ActionTemp {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if let Some(ord) = self.partial_cmp(other) {
+            return ord;
+        }
+        std::cmp::Ordering::Equal
+    }
+}
+
 #[derive(Debug)]
 pub struct PersonAi {
     /// Brain owner's UUID
@@ -82,7 +105,7 @@ impl PersonAi {
             return Action::idle();
         }
 
-        processed_actions.sort_by(|a, b| a.score.partial_cmp(&b.score).unwrap());
+        processed_actions.sort_by(|a, b| a.cmp(&b));
 
         filter_action_dupes(&mut processed_actions);
 

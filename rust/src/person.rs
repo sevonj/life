@@ -36,7 +36,7 @@ impl Task {
             state: TaskState::Init,
             action,
             target_position,
-            time_left: 2.0,
+            time_left: 8.0,
         }
     }
     pub fn uuid(&self) -> Uuid {
@@ -129,16 +129,6 @@ impl INode3D for Person {
                                 self.task.state = TaskState::InProgress;
 
                                 match self.task.action.key.as_str() {
-                                    "sleep" => {
-                                        let particles_packed: Gd<PackedScene> =
-                                            load("res://assets/prefabs/vfx_particle_zzz.tscn");
-                                        let particles = particles_packed.instantiate().unwrap();
-                                        this_gd.add_child(&particles);
-                                        this_gd.connect(
-                                            "sig_task_ended",
-                                            &particles.callable("queue_free"),
-                                        );
-                                    }
                                     "do_the_mario" => {
                                         let particles_packed: Gd<PackedScene> =
                                             load("res://assets/prefabs/vfx_particle_hearts.tscn");
@@ -156,7 +146,17 @@ impl INode3D for Person {
                         }
                     }
                 }
-                None => self.task.state = TaskState::InProgress,
+                None => {
+                    if self.task.action.key.as_str() == "sleep" {
+                        let particles_packed: Gd<PackedScene> =
+                            load("res://assets/prefabs/vfx_particle_zzz.tscn");
+                        let particles = particles_packed.instantiate().unwrap();
+                        this_gd.add_child(&particles);
+                        this_gd.connect("sig_task_ended", &particles.callable("queue_free"));
+                    }
+
+                    self.task.state = TaskState::InProgress;
+                }
             },
             TaskState::InProgress => {
                 self.task.time_left -= delta;
@@ -240,7 +240,7 @@ impl Person {
                 "toilet".into(),
                 "sit".into(),
                 "sleep".into(),
-                "do_the_mario".into(),
+                //"do_the_mario".into(),
                 "wash_hands".into(),
                 "idle".into(),
             ],

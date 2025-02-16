@@ -1,6 +1,9 @@
 //! class: [WorldEnv]
 //! desc: Manages environment stuff, like the sun and the skybox.
 //!
+use std::f32::consts::PI;
+use std::time::Duration;
+
 use godot::classes::DirectionalLight3D;
 use godot::obj::WithBaseField;
 use godot::prelude::*;
@@ -38,5 +41,10 @@ impl WorldEnv {
         sun.set_name("env_sun");
 
         self.base_mut().add_child(&sun);
+    }
+
+    pub fn set_time(&mut self, time_of_day: Duration) {
+        let angle = time_of_day.as_secs_f32() / (3600.0 * 24.0) * PI * 2.0 + PI;
+        self.sun.set_rotation(Vector3::new(angle, -24.0, 0.0));
     }
 }
