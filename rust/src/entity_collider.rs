@@ -42,13 +42,8 @@ impl IArea3D for EntityCollider {
         };
 
         if let Ok(event) = event.clone().try_cast::<InputEventMouseButton>() {
-            match event.get_button_index() {
-                MouseButton::LEFT => {
-                    if event.is_pressed() {
-                        self.base_mut().emit_signal("sig_clicked", &[]);
-                    }
-                }
-                _ => return,
+            if event.get_button_index() == MouseButton::LEFT && event.is_pressed() {
+                self.base_mut().emit_signal("sig_clicked", &[]);
             }
         }
     }

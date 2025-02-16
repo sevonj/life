@@ -1,7 +1,7 @@
 use godot::{classes::MeshInstance3D, prelude::*};
 
 use super::{tool_gizmo::ToolGizmoStyle, tool_helper, LotBuilder, ToolGizmo};
-use crate::lot_data::{self, Wall};
+use crate::lot_data::Wall;
 
 #[derive(Debug, Default)]
 enum WallToolMode {
@@ -137,8 +137,7 @@ impl WallTool {
         let hover_coord_opt = self
             .base()
             .get_viewport()
-            .map(|f| tool_helper::hovered_wall_grid_coord(f))
-            .flatten();
+            .and_then(tool_helper::hovered_wall_grid_coord);
 
         // No tool operation
         let Some(mut span) = self.tool_span else {
@@ -172,25 +171,22 @@ impl WallTool {
         }
 
         // Commit tool operation
-        if input.is_action_just_pressed("tool_commit") {
-            if hover_coord_opt.is_some() {
-                self.tool_span = None;
-                match self.tool_mode {
-                    WallToolMode::Add => {
-                        for piece in self.break_span(span) {
-                            let wall = Wall::new(piece.0, piece.1).unwrap();
-                            self.add_wall(wall);
-                        }
-                    }
-                    WallToolMode::Remove => {
-                        for piece in self.break_span(span) {
-                            self.remove_wall(piece);
-                        }
+        if input.is_action_just_pressed("tool_commit") && hover_coord_opt.is_some() {
+            self.tool_span = None;
+            match self.tool_mode {
+                WallToolMode::Add => {
+                    for piece in self.break_span(span) {
+                        let wall = Wall::new(piece.0, piece.1).unwrap();
+                        self.add_wall(wall);
                     }
                 }
-                self.rebuild_mesh();
-                return;
+                WallToolMode::Remove => {
+                    for piece in self.break_span(span) {
+                        self.remove_wall(piece);
+                    }
+                }
             }
+            self.rebuild_mesh();
         }
     }
 
@@ -216,8 +212,7 @@ impl WallTool {
         let hover_coord_opt = self
             .base()
             .get_viewport()
-            .map(|f| tool_helper::hovered_wall_grid_coord(f))
-            .flatten();
+            .and_then(tool_helper::hovered_wall_grid_coord);
 
         let Some(hover_coord) = hover_coord_opt else {
             self.gizmo_action.hide();

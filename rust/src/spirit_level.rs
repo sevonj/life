@@ -48,7 +48,7 @@ impl INode3D for SpiritLevel {
             self.vial_contents
                 .set_position(Vector3::DOWN * ((1.0 - mood) * VIAL_H / 2.0));
             self.vial_contents.set_height((1.0 - mood) * VIAL_H);
-        } else{
+        } else {
             self.base_mut().hide();
         }
     }
@@ -91,7 +91,6 @@ impl SpiritLevel {
         contents.add_child(&contents_topball);
         contents.add_child(&contents_bottomball);
 
-        
         contents.set_material_override(&contents_mat);
         contents.set_name("contents");
 

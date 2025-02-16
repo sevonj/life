@@ -68,9 +68,7 @@ impl Walls {
             walls.insert(wall.span(), wall);
         }
 
-        let this = Self { walls };
-
-        this
+        Self { walls }
     }
 
     pub fn add_wall(&mut self, wall: Wall) {
@@ -88,10 +86,8 @@ impl Walls {
         if span.0.x < span.1.x {
             return (span.0, span.1);
         }
-        if span.0.x == span.1.x {
-            if span.0.y < span.1.y {
-                return (span.0, span.1);
-            }
+        if span.0.x == span.1.x && span.0.y < span.1.y {
+            return (span.0, span.1);
         }
         (span.1, span.0)
     }
@@ -104,12 +100,8 @@ impl Walls {
         for wall in self.walls.values() {
             let a = wall.span().0;
             let b = wall.span().1;
-            if !connections.contains_key(&a) {
-                connections.insert(a, HashSet::new());
-            }
-            if !connections.contains_key(&b) {
-                connections.insert(b, HashSet::new());
-            }
+            connections.entry(a).or_insert_with(HashSet::new);
+            connections.entry(b).or_insert_with(HashSet::new);
             connections.get_mut(&a).unwrap().insert(b);
             connections.get_mut(&b).unwrap().insert(a);
         }

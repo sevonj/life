@@ -10,6 +10,7 @@ use super::WallTool;
 enum LotBuilderTool {
     #[default]
     None,
+    #[allow(dead_code)]
     Wall(Gd<WallTool>),
 }
 
@@ -19,7 +20,7 @@ pub struct LotBuilder {
     grid: Gd<BuilderGrid>,
     tool: LotBuilderTool,
     wall_data: lot_data::Walls,
-    wall_mesh: Gd<MeshInstance3D>,
+    _wall_mesh: Gd<MeshInstance3D>,
 
     base: Base<Node>,
 }
@@ -43,7 +44,7 @@ impl LotBuilder {
             grid: BuilderGrid::new_alloc(),
             tool: LotBuilderTool::None,
             wall_data,
-            wall_mesh,
+            _wall_mesh: wall_mesh,
 
             base,
         })

@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use godot::prelude::*;
 use uuid::Uuid;
 
-use crate::{action, Action, EntityCollider, PersonAi, PersonNeeds, World};
+use crate::{Action, EntityCollider, PersonAi, PersonNeeds, World};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskState {
@@ -124,22 +124,19 @@ impl INode3D for Person {
                             return;
                         }
                         match partner.bind().task.state {
-                            TaskState::Init | TaskState::Moving => return,
+                            TaskState::Init | TaskState::Moving => (),
                             TaskState::Waiting | TaskState::InProgress => {
                                 self.task.state = TaskState::InProgress;
 
-                                match self.task.action.key.as_str() {
-                                    "do_the_mario" => {
-                                        let particles_packed: Gd<PackedScene> =
-                                            load("res://assets/prefabs/vfx_particle_hearts.tscn");
-                                        let particles = particles_packed.instantiate().unwrap();
-                                        this_gd.add_child(&particles);
-                                        this_gd.connect(
-                                            "sig_task_ended",
-                                            &particles.callable("queue_free"),
-                                        );
-                                    }
-                                    _ => (),
+                                if self.task.action.key.as_str() == "do_the_mario" {
+                                    let particles_packed: Gd<PackedScene> =
+                                        load("res://assets/prefabs/vfx_particle_hearts.tscn");
+                                    let particles = particles_packed.instantiate().unwrap();
+                                    this_gd.add_child(&particles);
+                                    this_gd.connect(
+                                        "sig_task_ended",
+                                        &particles.callable("queue_free"),
+                                    );
                                 }
                             }
                             TaskState::Done => panic!("wtf, partner ended task before I began?"),
@@ -324,7 +321,7 @@ impl Person {
             None => self.brain.decide_action(
                 &self.needs,
                 &self.world.bind().advertisements(),
-                &self.world.bind().people(),
+                self.world.bind().people(),
                 &self.possible_actions,
             ),
         };
@@ -333,7 +330,7 @@ impl Person {
 
         // Send a secondary copy to partner of group activity.
         if task.action.is_primary() {
-            if let Some(partner_uuid) = task.action.partner_uuid.clone() {
+            if let Some(partner_uuid) = task.action.partner_uuid {
                 let mut secondary_action = task.action.clone();
 
                 let mut partner = self.world.bind().get_person(&partner_uuid).unwrap().clone();

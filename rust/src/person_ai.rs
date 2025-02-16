@@ -3,7 +3,6 @@
 //!
 use godot::prelude::*;
 
-use rand;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
@@ -24,6 +23,7 @@ impl PartialEq for ActionTemp {
 impl Eq for ActionTemp {}
 
 impl PartialOrd for ActionTemp {
+    #[allow(clippy::non_canonical_partial_ord_impl)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.score.partial_cmp(&other.score)
     }
@@ -60,7 +60,7 @@ impl PersonAi {
         needs: &PersonNeeds,
         advertised_actions: &Vec<ActionAdvertisement>,
         people: &HashMap<Uuid, Gd<Person>>,
-        possible_actions: &Vec<String>,
+        possible_actions: &[String],
     ) -> Action {
         let mut processed_actions = vec![];
 
@@ -105,7 +105,7 @@ impl PersonAi {
             return Action::idle();
         }
 
-        processed_actions.sort_by(|a, b| a.cmp(&b));
+        processed_actions.sort();
 
         filter_action_dupes(&mut processed_actions);
 

@@ -1,6 +1,3 @@
-//!
-//!
-
 /// Real needs of a real human
 #[derive(Debug)]
 pub struct PersonNeeds {

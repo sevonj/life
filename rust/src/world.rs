@@ -141,13 +141,10 @@ impl INode for World {
 
     fn unhandled_input(&mut self, event: Gd<InputEvent>) {
         if let Ok(event) = event.clone().try_cast::<InputEventMouseButton>() {
-            match event.get_button_index() {
-                MouseButton::LEFT => {
-                    if event.is_pressed() {
-                        self.select_person(None);
-                    }
+            if let MouseButton::LEFT = event.get_button_index() {
+                if event.is_pressed() {
+                    self.select_person(None);
                 }
-                _ => return,
             }
         }
     }
@@ -536,9 +533,8 @@ impl World {
 
     pub fn select_next_person(&mut self) {
         let Some(current) = self.selected_person.as_ref().map(|p| p.bind().uuid()) else {
-            for person in self.people.values() {
+            if let Some(person) = self.people.values().next() {
                 self.select_person(Some(person.clone()));
-                return;
             }
             return;
         };

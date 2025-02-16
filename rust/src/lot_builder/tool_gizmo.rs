@@ -35,10 +35,6 @@ impl ICsgSphere3D for ToolGizmo {
 }
 
 impl ToolGizmo {
-    pub fn with_style(&mut self, style: ToolGizmoStyle) -> Gd<Self> {
-        Gd::from_init_fn(|base| Self { style, base })
-    }
-
     fn setup_model(&mut self) {
         self.base_mut().set_radius(0.2);
         self.base_mut().set_smooth_faces(false);

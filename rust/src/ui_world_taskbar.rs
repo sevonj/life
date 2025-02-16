@@ -2,7 +2,7 @@
 //! Desc: The large bottom bar in home view
 //!
 use godot::classes::{
-    control::LayoutPreset, Control, HBoxContainer, IPanelContainer, PanelContainer, Script, StyleBoxTexture
+    control::LayoutPreset, Control, HBoxContainer, IPanelContainer, PanelContainer, StyleBoxTexture,
 };
 use godot::prelude::*;
 
@@ -20,11 +20,11 @@ pub struct UiWorldTaskbar {
 
     ui_world_mode_select: Gd<Control>,
 
-    ui_playmode_root: Gd<HBoxContainer>,
+    _ui_playmode_root: Gd<HBoxContainer>,
     ui_playmode_person_bio: Gd<UiPersonBioPanel>,
     ui_playmode_person_needs: Gd<UiPersonNeedsPanel>,
 
-    ui_buildmode_root: Gd<HBoxContainer>,
+    _ui_buildmode_root: Gd<HBoxContainer>,
 
     base: Base<PanelContainer>,
 }
@@ -42,11 +42,11 @@ impl IPanelContainer for UiWorldTaskbar {
 
             ui_world_mode_select: Control::new_alloc(),
 
-            ui_playmode_root: HBoxContainer::new_alloc(),
+            _ui_playmode_root: HBoxContainer::new_alloc(),
             ui_playmode_person_bio: UiPersonBioPanel::new_alloc(),
             ui_playmode_person_needs: UiPersonNeedsPanel::new_alloc(),
 
-            ui_buildmode_root: HBoxContainer::new_alloc(),
+            _ui_buildmode_root: HBoxContainer::new_alloc(),
 
             base,
         }
