@@ -12,7 +12,6 @@ pub enum ToolGizmoStyle {
 
 #[derive(Debug, GodotClass)]
 #[class(base=CsgSphere3D)]
-
 pub struct ToolGizmo {
     style: ToolGizmoStyle,
 
