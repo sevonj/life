@@ -1,3 +1,5 @@
+[![CI](https://github.com/sevonj/life/actions/workflows/rust.yml/badge.svg)](https://github.com/sevonj/life/actions/workflows/rust.yml)
+___
 # Life
 
 A game that resembles The Sims.
@@ -36,3 +38,11 @@ Building a home in the game involves procedurally generating floors, walls, stai
 TODO - Probably GPL.
 
 Also, some files fit for generic reuse are _in addition_ available under more permissive MPL 2.0. It is mentioned in the file, if so.
+
+## Continuous Integration
+
+Pull requests are gatekept by [this workflow.](https://github.com/sevonj/life/blob/master/.github/workflows/rust.yml) It will check if the code
+
+- ~~passes unit tests~~ (run `cargo test`)
+- has linter warnings (run `cargo clippy`)
+- is formatted (run `cargo fmt`)
