@@ -12,7 +12,9 @@ This project is an experiment that aims to explore a few things:
 
 ### Rust bindings for Godot game engine
 
-GDScript is a great scripting language, but it lacks some features and tools that one would expect from a "real" programming language. Development of complex systems was tedious as many changes came with a regression. This is the second project in series of trying out C++ (GDExtension), Rust (GDExtension), and C# (Godot .NET). All game code shall be written in Rust, with possible exception of GDScript for UI elements or other minor things.  
+GDScript lacks some features and tools that one would expect from a "real" programming language. Development of complex systems has been tedious as many changes resulted in a regression. This is the second project in series of trying out C++, Rust, and C# as a GDScript replacement.
+
+All game code shall be written in Rust, with possible exception of GDScript for UI elements or other minor things.  
   
 ### Complex decision making with utility AI
 
