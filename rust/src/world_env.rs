@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 //! class: [WorldEnv]
 //! desc: Manages environment stuff, like the sun and the skybox.
 //!

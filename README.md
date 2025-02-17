@@ -26,7 +26,15 @@ My previous hierarchial state machine (modeled after fundamentals of [Source Eng
 
 Building a home in the game involves procedurally generating floors, walls, staircases, etc. and further modifying the result by for example cutting openings for doors and windows, making this kind of a spiritual successor to [WorldEdit](https://github.com/sevonj/worldedit).
 
-## Building
+## Development
+
+### License
+
+The GDExtension that makes up the games's actual source code (./rust/) is in its entirety licensed under LGPL. Some files are additionally available under more permissive MPL 2.0.
+
+TODO: License the Godot project and its contained assets.
+
+### Building
 
 **Requirements:**  
 - [Godot 4.3](https://godotengine.org/)
@@ -36,12 +44,7 @@ Building a home in the game involves procedurally generating floors, walls, stai
 - Run `cargo build` in the rust directory
 - Open the project in Godot editor
 
-## License
-TODO - Probably GPL.
-
-Also, some files fit for generic reuse are _in addition_ available under more permissive MPL 2.0. It is mentioned in the file, if so.
-
-## Continuous Integration
+### Continuous Integration
 
 Pull requests are gatekept by [this workflow.](https://github.com/sevonj/life/blob/master/.github/workflows/rust.yml) It will check if the code
 

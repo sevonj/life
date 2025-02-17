@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
+use godot::prelude::*;
+
 use godot::classes::mesh::PrimitiveType;
 use godot::classes::{ArrayMesh, IMeshInstance3D, Material, MeshInstance3D, SurfaceTool};
 
-use godot::prelude::*;
 
 #[derive(Debug, GodotClass)]
 #[class(base=MeshInstance3D)]

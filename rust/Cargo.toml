@@ -2,7 +2,7 @@
 name = "life"
 version = "0.1.0"
 edition = "2021"
-license = "MPL-2.0"
+license = "LGPL-3.0-or-later"
 publish = false
 
 [lib]

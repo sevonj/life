@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 /// Real needs of a real human
 #[derive(Debug)]
 pub struct PersonNeeds {

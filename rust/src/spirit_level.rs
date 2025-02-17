@@ -1,7 +1,7 @@
-use godot::{
-    classes::{CsgCylinder3D, CsgSphere3D, Material},
-    prelude::*,
-};
+// SPDX-License-Identifier: LGPL-3.0-or-later
+use godot::prelude::*;
+
+use godot::classes::{CsgCylinder3D, CsgSphere3D, Material};
 
 use crate::Person;
 

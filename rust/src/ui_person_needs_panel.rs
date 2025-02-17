@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 //! Class: [UiPersonNeedsPanel]
 //! Desc: A large panel that shows a person's needs.
 //!

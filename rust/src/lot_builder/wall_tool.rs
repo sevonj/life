@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 use godot::{classes::MeshInstance3D, prelude::*};
 
 use super::{tool_gizmo::ToolGizmoStyle, tool_helper, LotBuilder, ToolGizmo};

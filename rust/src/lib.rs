@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 mod action;
 mod action_advertisement;
 mod camera_rig_orbit;

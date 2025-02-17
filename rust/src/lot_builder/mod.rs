@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 mod builder;
 mod builder_grid;
 mod tool_gizmo;

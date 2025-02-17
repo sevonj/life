@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 use godot::{
     classes::{BoxShape3D, Shape3D},
     prelude::*,

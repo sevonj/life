@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 //! class: [EntityCollider]
 //! desc: A component for entities. This will detect when the entity is clicked.
 //!
