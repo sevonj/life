@@ -4,7 +4,6 @@ use godot::prelude::*;
 use godot::classes::mesh::PrimitiveType;
 use godot::classes::{ArrayMesh, IMeshInstance3D, Material, MeshInstance3D, SurfaceTool};
 
-
 #[derive(Debug, GodotClass)]
 #[class(base=MeshInstance3D)]
 pub struct BuilderGrid {
