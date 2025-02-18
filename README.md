@@ -12,7 +12,7 @@ This project is an experiment that aims to explore a few things:
 
 ### Rust bindings for Godot game engine
 
-GDScript lacks some features and tools that one would expect from a "real" programming language. Development of complex systems has been tedious as many changes resulted in a regression. This is the second project in series of trying out C++, Rust, and C# as a GDScript replacement.
+GDScript lacks some features and tools that one would expect from a "real" programming language. Development of complex systems in GDScript has been tedious as many changes resulted in a regression. This is the second project in series of trying out C++, Rust, and C# as a GDScript replacement.
 
 All game code shall be written in Rust, with possible exception of GDScript for UI elements or other minor things.  
   
@@ -20,7 +20,7 @@ All game code shall be written in Rust, with possible exception of GDScript for 
 
 (Traditional game AI, built with logic. Not the machine learning kind of AI)
 
-My previous hierarchial state machine (modeled after fundamentals of [Source Engine AI](https://developer.valvesoftware.com/wiki/Category:AI)) ended up working great, but [The Sims offers some very interesting conceps](https://gmtk.substack.com/p/the-genius-ai-behind-the-sims), such as _needs,_ and _advertisements._
+My previous hierarchial state machine (modeled after fundamentals of [Source Engine AI](https://developer.valvesoftware.com/wiki/Category:AI)) ended up working great, but [The Sims offers some very interesting conceps](https://gmtk.substack.com/p/the-genius-ai-behind-the-sims), such as _advertisements._
 
 ### Procedural mesh generation
 
