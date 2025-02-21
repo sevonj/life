@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 mod action;
 mod action_advertisement;
+mod camera_cursor_gizmo;
 mod camera_rig_orbit;
 mod entity_collider;
 mod furniture;
@@ -22,6 +23,7 @@ mod world_view_mode;
 
 pub use action::Action;
 pub use action_advertisement::{ActionAdvertisement, ActionAdvertisementStat};
+pub use camera_cursor_gizmo::CameraCursorGizmo;
 pub use camera_rig_orbit::CameraRigOrbit;
 pub use entity_collider::EntityCollider;
 pub use furniture::Furniture;
